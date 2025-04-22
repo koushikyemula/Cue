@@ -1,9 +1,8 @@
-import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/react";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { InstallPWA } from "@/components/install-pwa";
 import { Providers } from "@/components/providers";
+import { Viewport } from "next";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,6 +13,23 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    {
+      color: "#0A0A0A",
+      media: "(prefers-color-scheme: dark)",
+    },
+    {
+      color: "#ffffff",
+      media: "(prefers-color-scheme: light)",
+    },
+  ],
+};
 
 export default function RootLayout({
   children,
