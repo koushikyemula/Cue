@@ -1,11 +1,11 @@
 "use client";
 
-import { CornerRightUp } from "lucide-react";
-import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
-import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { CornerRightUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface AIInput {
   id?: string;
@@ -15,7 +15,7 @@ interface AIInput {
   defaultSelected?: string;
   loadingDuration?: number;
   onSubmit?: (text: string, action?: string) => void;
-  onClose?: () => void;
+  onClose: () => void;
   className?: string;
 }
 
@@ -94,9 +94,9 @@ export function AIInput({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={cn("w-full py-4 px-4 sm:px-0", className)}
+      className={cn("w-full py-4 px-4 sm:px-0 pointer-events-auto", className)}
     >
-      <div className="relative max-w-xl w-full mx-auto">
+      <div className="relative max-w-lg w-full mx-auto">
         <motion.div
           className={cn(
             "relative border transition-all duration-200 ease-in-out",
@@ -110,8 +110,15 @@ export function AIInput({
         >
           <div className="flex flex-col">
             <div
-              className="overflow-y-auto px-4"
+              className="overflow-y-auto px-4 cursor-text"
               style={{ maxHeight: `${maxHeight - 48}px` }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (textareaRef.current && !submitted) {
+                  textareaRef.current.focus();
+                }
+              }}
             >
               <Textarea
                 ref={textareaRef}
@@ -129,6 +136,9 @@ export function AIInput({
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 disabled={submitted}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
               />
             </div>
           </div>
@@ -157,7 +167,8 @@ export function AIInput({
           </motion.button>
         </motion.div>
         <p className="h-4 text-xs mt-2 text-center text-black/70 dark:text-white/70">
-          {submitted ? "AI is thinking..." : "Ready to submit!"}
+          Try: "sort by newest", "clear completed", or "add meeting tomorrow at
+          3pm"
         </p>
       </div>
     </motion.div>

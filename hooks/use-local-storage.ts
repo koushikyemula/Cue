@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { TodoItem } from "@/types";
-import { serializeTodo } from "@/lib/utils/todo";
+import { TaskItem } from "@/types";
+import { serializeTask } from "@/lib/utils/task";
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(initialValue);
@@ -19,9 +19,9 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         return value;
       });
 
-      if (Array.isArray(parsed) && key === "todos") {
+      if (Array.isArray(parsed) && key === "tasks") {
         setStoredValue(
-          parsed.map((item: any) => serializeTodo(item as TodoItem)) as T,
+          parsed.map((item: any) => serializeTask(item as TaskItem)) as T
         );
       } else {
         setStoredValue(parsed as T);
@@ -46,14 +46,14 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
                 return value.toISOString();
               }
               return value;
-            }),
+            })
           );
         }
       } catch (error) {
         console.error("Failed to save to localStorage:", error);
       }
     },
-    [key, storedValue, isMounted],
+    [key, storedValue, isMounted]
   );
 
   return [storedValue, setValue] as const;
