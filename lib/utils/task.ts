@@ -1,0 +1,78 @@
+import { TaskItem } from "@/types";
+import { format } from "date-fns";
+
+// Helper function to ensure Date objects are properly serialized
+export const serializeTask = (task: TaskItem): TaskItem => {
+  // If date is already a Date object, return the task as is
+  if (task.date instanceof Date) {
+    return task;
+  }
+
+  // If date is a string, convert it to a Date object
+  return {
+    ...task,
+    date: new Date(task.date),
+  };
+};
+
+// Format date for display
+export const formatDate = (date: Date) => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  } else if (date.toDateString() === tomorrow.toDateString()) {
+    return `Tomorrow, ${format(date, "EEE, d MMM")}`;
+  } else {
+    return format(date, "EEE, d MMM");
+  }
+};
+
+// Filter tasks by date
+export const filterTasksByDate = (tasks: TaskItem[], selectedDate: Date) => {
+  return tasks.filter(
+    (task) =>
+      format(task.date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+  );
+};
+
+// Sort tasks by criteria
+export const sortTasks = (tasks: TaskItem[], sortBy: string) => {
+  return [...tasks].sort((a, b) => {
+    switch (sortBy) {
+      case "newest":
+        return b.id.localeCompare(a.id);
+      case "oldest":
+        return a.id.localeCompare(b.id);
+      case "alphabetical":
+        return a.text.localeCompare(b.text);
+      case "completed":
+        return Number(b.completed) - Number(a.completed);
+      case "priority":
+        // Priority order: high > medium > low > undefined
+        const priorityOrder = { high: 3, medium: 2, low: 1, undefined: 0 };
+        const priorityA =
+          priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+        const priorityB =
+          priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+
+        // Sort by priority (descending) first, then by completion status
+        if (priorityA === priorityB) {
+          return Number(a.completed) - Number(b.completed);
+        }
+        return priorityB - priorityA;
+      default:
+        return 0;
+    }
+  });
+};
+
+// Calculate progress
+export const calculateProgress = (tasks: TaskItem[]) => {
+  const completedCount = tasks.filter((task) => task.completed).length;
+  return tasks.length > 0
+    ? Math.round((completedCount / tasks.length) * 100)
+    : 0;
+};
