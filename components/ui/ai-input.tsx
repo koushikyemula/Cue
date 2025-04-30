@@ -1,7 +1,7 @@
 "use client";
 
 import { Textarea } from "@/components/ui/textarea";
-import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
+import { useAutoResizeTextarea } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CornerRightUp } from "lucide-react";

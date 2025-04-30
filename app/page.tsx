@@ -3,7 +3,7 @@
 import { determineAction } from "@/app/actions";
 import Task from "@/components/task";
 import { AIInput } from "@/components/ui/ai-input";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useIndexedDB } from "@/hooks";
 import { serializeTask } from "@/lib/utils/task";
 import { SortOption, TaskItem } from "@/types";
 import { format } from "date-fns";
@@ -13,7 +13,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 
 export default function Home() {
   const [isInputVisible, setIsInputVisible] = useState(false);
-  const [tasks, setTasks] = useLocalStorage<TaskItem[]>("tasks", []);
+  const [tasks, setTasks] = useIndexedDB<TaskItem[]>("tasks", []);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const inputRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +41,7 @@ export default function Home() {
                 text: action.text || text,
                 completed: false,
                 date: taskDate,
-                time: action.time,
+                scheduled_time: action.time,
                 priority: action.priority,
               })
             );
@@ -87,7 +87,6 @@ export default function Home() {
                     date: action.targetDate
                       ? new Date(action.targetDate)
                       : task.date,
-                    time: action.time || task.time,
                   };
 
                   // Only update priority if explicitly provided in the action

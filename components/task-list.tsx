@@ -91,7 +91,7 @@ const TaskEditForm = memo(
           handleEditTask({
             ...task,
             text: editText,
-            time: editTime,
+            scheduled_time: editTime,
             priority: editPriority,
           });
         } else if (e.key === "Escape") {
@@ -105,7 +105,7 @@ const TaskEditForm = memo(
       handleEditTask({
         ...task,
         text: editText,
-        time: editTime,
+        scheduled_time: editTime,
         priority: editPriority,
       });
     }, [task, editText, editTime, editPriority, handleEditTask]);
@@ -244,7 +244,7 @@ const TaskView = memo(
             </motion.span>
             <PriorityFlag priority={task.priority} />
           </motion.div>
-          <TimeDisplay time={task.time} />
+          <TimeDisplay time={task.scheduled_time} />
         </motion.div>
         <div className="flex items-center gap-1">
           <Button
@@ -309,7 +309,7 @@ export function TaskList({
   useEffect(() => {
     if (editingTaskId) {
       const task = tasks.find((t) => t.id === editingTaskId);
-      setEditTime(task?.time || "");
+      setEditTime(task?.scheduled_time || "");
       setEditPriority(task?.priority);
     }
   }, [editingTaskId, tasks]);
@@ -398,7 +398,7 @@ export function TaskList({
                     </motion.span>
                     <PriorityFlag priority={task.priority} />
                   </motion.div>
-                  <TimeDisplay time={task.time} />
+                  <TimeDisplay time={task.scheduled_time} />
                 </motion.div>
 
                 <motion.div

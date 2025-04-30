@@ -3,7 +3,9 @@ export interface TaskItem {
   text: string;
   completed: boolean;
   date: Date;
-  time?: string;
+  created_at?: Date;
+  updated_at?: Date;
+  scheduled_time?: string;
   priority?: "high" | "medium" | "low";
 }
 

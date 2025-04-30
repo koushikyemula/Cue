@@ -3,16 +3,24 @@ import { format } from "date-fns";
 
 // Helper function to ensure Date objects are properly serialized
 export const serializeTask = (task: TaskItem): TaskItem => {
-  // If date is already a Date object, return the task as is
-  if (task.date instanceof Date) {
-    return task;
+  const now = new Date();
+  const result: TaskItem = { ...task };
+
+  if (!(task.date instanceof Date)) {
+    result.date = new Date(task.date);
   }
 
-  // If date is a string, convert it to a Date object
-  return {
-    ...task,
-    date: new Date(task.date),
-  };
+  // Handle created_at
+  if (!task.created_at) {
+    result.created_at = now;
+  } else if (!(task.created_at instanceof Date)) {
+    result.created_at = new Date(task.created_at);
+  }
+
+  // Always update updated_at
+  result.updated_at = now;
+
+  return result;
 };
 
 // Format date for display

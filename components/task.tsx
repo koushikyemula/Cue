@@ -103,7 +103,7 @@ export default function Task({ initialTasks, setTasks, sortBy }: TaskProps) {
             const updated = serializeTask({
               ...task,
               text: updatedTask.text,
-              time: updatedTask.time,
+              scheduled_time: updatedTask.scheduled_time,
               priority: updatedTask.priority,
             });
             return updated;
