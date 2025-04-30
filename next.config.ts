@@ -1,6 +1,10 @@
+import {
+  PHASE_DEVELOPMENT_SERVER,
+  PHASE_PRODUCTION_BUILD,
+} from "next/constants";
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfigBase: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "@phosphor-icons/react"],
     serverActions: {
@@ -28,6 +32,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+};
+
+const nextConfig = async (phase: string): Promise<NextConfig> => {
+  if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
+    const withSerwist = (await import("@serwist/next")).default({
+      swSrc: "lib/service-worker/worker.ts",
+      swDest: "public/sw.js",
+      reloadOnOnline: true,
+    });
+    return withSerwist(nextConfigBase);
+  }
+
+  return nextConfigBase;
 };
 
 export default nextConfig;

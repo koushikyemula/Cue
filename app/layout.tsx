@@ -1,7 +1,9 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
-import { Viewport } from "next";
+import { Viewport, Metadata } from "next";
+import { InstallPWA } from "@/components/install-pwa";
+import { OfflineBanner } from "@/components/offline-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +33,22 @@ export const viewport: Viewport = {
   ],
 };
 
+export const metadata: Metadata = {
+  title: "XLR8",
+  description:
+    "XLR8 - A sleek, minimalist task manager that helps you focus on what matters.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://xlr8.dev"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "XLR8",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,6 +60,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
         suppressHydrationWarning
       >
+        <InstallPWA promptDelay={3000} />
+        <OfflineBanner />
         <Providers>{children}</Providers>
         <Analytics />
       </body>
