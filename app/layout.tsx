@@ -4,6 +4,7 @@ import { Providers } from "@/components/providers";
 import { Viewport, Metadata } from "next";
 import { InstallPWA } from "@/components/install-pwa";
 import { OfflineBanner } from "@/components/offline-banner";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,16 +56,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
-        suppressHydrationWarning
-      >
-        <InstallPWA promptDelay={3000} />
-        <OfflineBanner />
-        <Providers>{children}</Providers>
-        <Analytics />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className="h-full" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
+          suppressHydrationWarning
+        >
+          <InstallPWA promptDelay={3000} />
+          <OfflineBanner />
+          <Providers>{children}</Providers>
+          <Analytics />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
