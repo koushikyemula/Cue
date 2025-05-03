@@ -3,19 +3,33 @@
 import { determineAction } from "@/app/actions";
 import Task from "@/components/task";
 import { AIInput } from "@/components/ui/ai-input";
+import { Button } from "@/components/ui/button";
+import { FileInput } from "@/components/ui/file-input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useIndexedDB } from "@/hooks";
 import { serializeTask } from "@/lib/utils/task";
 import { SortOption, TaskItem } from "@/types";
+import { CloudArrowDown, CloudArrowUp } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { AnimatePresence } from "framer-motion";
+import { CloudFog } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { toast } from "sonner";
 
-export default function Home() {
+function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
-  const [tasks, setTasks] = useIndexedDB<TaskItem[]>("tasks", []);
+  const [tasks, setTasks, exportData, importData] = useIndexedDB<TaskItem[]>(
+    "tasks",
+    []
+  );
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const inputRef = useRef<HTMLDivElement>(null);
+  const [syncOpen, setSyncOpen] = useState(false);
 
   useHotkeys("meta+k, ctrl+k", (e) => {
     e.preventDefault();
@@ -23,6 +37,31 @@ export default function Home() {
   });
 
   const handleClose = useCallback(() => setIsInputVisible(false), []);
+
+  const handleExport = useCallback(async () => {
+    try {
+      const result = await exportData();
+      toast.success(result.message);
+    } catch (error) {
+      toast.error("Failed to export data");
+    } finally {
+      setSyncOpen(false);
+    }
+  }, [exportData]);
+
+  const handleImport = useCallback(
+    async (file: File) => {
+      try {
+        const result = await importData(file);
+        toast.success(result.message);
+      } catch (error) {
+        toast.error("Failed to import data");
+      } finally {
+        setSyncOpen(false);
+      }
+    },
+    [importData]
+  );
 
   const processActions = useCallback(
     (actions: any[], text: string, selectedDate: Date) => {
@@ -131,12 +170,16 @@ export default function Home() {
               }
             }
             break;
+
+          case "export":
+            handleExport();
+            break;
         }
       });
 
       return newTasks;
     },
-    [tasks]
+    [tasks, handleExport]
   );
 
   const handleSubmit = useCallback(
@@ -173,6 +216,52 @@ export default function Home() {
 
   return (
     <main className="h-full w-full flex flex-col mx-auto">
+      <div className="fixed top-3 right-3 z-40">
+        <Popover open={syncOpen} onOpenChange={setSyncOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-muted-foreground dark:hover:text-foreground"
+            >
+              <CloudFog className="h-4 w-4" />
+              <span className="text-xs">Sync</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-0" align="end" sideOffset={8}>
+            <div className="flex flex-col">
+              <div className="px-3 pt-3 pb-2">
+                <h3 className="text-sm font-medium">Data Sync</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Backup or restore your tasks
+                </p>
+              </div>
+              <div className="border-t px-1 py-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleExport}
+                  className="w-full justify-start text-xs hover:cursor-pointer h-8 gap-2 px-2 font-normal"
+                >
+                  <CloudArrowDown weight="light" className="h-3.5 w-3.5" />
+                  Export tasks as JSON
+                </Button>
+                <FileInput onFileSelect={handleImport} accept=".json">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start hover:cursor-pointer text-xs h-8 gap-2 px-2 font-normal"
+                  >
+                    <CloudArrowUp weight="light" className="h-3.5 w-3.5" />
+                    Import from JSON file
+                  </Button>
+                </FileInput>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
       <div className="flex-1 w-full max-w-md mx-auto px-4 pt-8">
         <Task initialTasks={tasks} setTasks={setTasks} sortBy={sortBy} />
       </div>
@@ -194,3 +283,4 @@ export default function Home() {
     </main>
   );
 }
+export default HomePage;

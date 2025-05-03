@@ -3,7 +3,7 @@ import { TaskItem } from "./index";
 
 export type DetermineActionResponse = {
   actions: Array<{
-    action: "add" | "delete" | "mark" | "sort" | "edit" | "clear";
+    action: "add" | "delete" | "mark" | "sort" | "edit" | "clear" | "export";
     text?: string;
     taskId?: string;
     targetDate?: string;

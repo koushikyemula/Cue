@@ -120,6 +120,7 @@ ${tasks?.map((task) => `- ${task.id}: ${task.text}`).join("\n")}
           "sort",
           "edit",
           "clear",
+          "export",
         ].join(", ")}
         - If the action is "add", the text and targetDate should be included.
         - If the action is "delete", the taskId should be included.
@@ -127,6 +128,7 @@ ${tasks?.map((task) => `- ${task.id}: ${task.text}`).join("\n")}
         - If the action is "sort", the sortBy should be included.
         - If the action is "edit", both the taskId (to identify the task to edit) and the text (the new content) should be included.
         - If the action is "clear", the user wants to clear the list of tasks with the given listToClear(all, completed, incomplete).
+        - If the action is "export", the user wants to export their tasks to a JSON file to save or share.
         
         For the add action, the text should be in the future tense. like "buy groceries", "make a post with @theo", "go for violin lesson"
         For the add action, priority can be specified and should be included when present.
@@ -162,6 +164,13 @@ ${tasks?.map((task) => `- ${task.id}: ${task.text}`).join("\n")}
         "user request: 'start fresh', action: 'clear', listToClear: 'all'"
         "user request: 'delete finished tasks', action: 'clear', listToClear: 'completed'"
         "user request: 'clean up my list', action: 'clear', listToClear: 'all'"
+        
+        Example export requests:
+        "user request: 'export my tasks', action: 'export'"
+        "user request: 'download my tasks', action: 'export'"
+        "user request: 'save my data', action: 'export'"
+        "user request: 'backup my tasks', action: 'export'"
+        "user request: 'export data', action: 'export'"
     `;
 
   const { object: action, usage } = await generateObject({
@@ -177,7 +186,7 @@ ${tasks?.map((task) => `- ${task.id}: ${task.text}`).join("\n")}
       actions: z.array(
         z.object({
           action: z
-            .enum(["add", "delete", "mark", "sort", "edit", "clear"])
+            .enum(["add", "delete", "mark", "sort", "edit", "clear", "export"])
             .describe("The action to take"),
           text: z.string().describe("The text of the task item").optional(),
           taskId: z
