@@ -71,5 +71,96 @@ export function useIndexedDB<T>(storeName: string, initialValue: T) {
     [storeName, storedValue, isMounted]
   );
 
-  return [storedValue, setValue] as const;
+  const exportData = useCallback(async () => {
+    try {
+      if (storeName === "tasks") {
+        const items = await db.tasks.toArray();
+        const tasksJson = JSON.stringify(items, null, 2);
+
+        // Create blob and download link
+        const blob = new Blob([tasksJson], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        // Set filename with date for versioning
+        const date = new Date().toISOString().split("T")[0];
+        link.download = `xlr8-tasks-${date}.json`;
+        link.href = url;
+        link.click();
+
+        // Clean up
+        URL.revokeObjectURL(url);
+
+        return { success: true, message: "Data exported successfully" };
+      } else {
+        return { success: false, message: "Only tasks export is supported" };
+      }
+    } catch (error) {
+      console.error("Failed to export data:", error);
+      return { success: false, message: "Failed to export data" };
+    }
+  }, [storeName]);
+
+  const importData = useCallback(
+    async (file: File) => {
+      try {
+        if (storeName !== "tasks") {
+          return { success: false, message: "Only tasks import is supported" };
+        }
+
+        return new Promise<{ success: boolean; message: string }>((resolve) => {
+          const reader = new FileReader();
+
+          reader.onload = async (e) => {
+            try {
+              const content = e.target?.result as string;
+              const importedTasks = JSON.parse(content) as TaskItem[];
+
+              // Validate the imported data structure
+              if (!Array.isArray(importedTasks)) {
+                resolve({ success: false, message: "Invalid data format" });
+                return;
+              }
+
+              // Update IndexedDB and state
+              await db.transaction("rw", db.tasks, async () => {
+                await db.tasks.clear();
+                if (importedTasks.length > 0) {
+                  await db.tasks.bulkAdd(importedTasks);
+                }
+              });
+
+              // Update state with imported tasks
+              setStoredValue(
+                importedTasks.map((item) => serializeTask(item)) as unknown as T
+              );
+
+              resolve({
+                success: true,
+                message: `Imported ${importedTasks.length} tasks successfully`,
+              });
+            } catch (error) {
+              console.error("Failed to parse imported data:", error);
+              resolve({
+                success: false,
+                message: "Failed to parse imported data",
+              });
+            }
+          };
+
+          reader.onerror = () => {
+            resolve({ success: false, message: "Failed to read file" });
+          };
+
+          reader.readAsText(file);
+        });
+      } catch (error) {
+        console.error("Failed to import data:", error);
+        return { success: false, message: "Failed to import data" };
+      }
+    },
+    [storeName, setStoredValue]
+  );
+
+  return [storedValue, setValue, exportData, importData] as const;
 }
