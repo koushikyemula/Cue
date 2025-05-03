@@ -216,7 +216,7 @@ function HomePage() {
 
   return (
     <main className="h-full w-full flex flex-col mx-auto">
-      <div className="fixed top-3 right-3 z-40">
+      <div className="fixed top-5 right-5 z-40">
         <Popover open={syncOpen} onOpenChange={setSyncOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -261,13 +261,12 @@ function HomePage() {
           </PopoverContent>
         </Popover>
       </div>
-
-      <div className="flex-1 w-full max-w-md mx-auto px-4 pt-8">
+      <div className="flex-1 w-full max-w-md mx-auto px-4 pt-5">
         <Task initialTasks={tasks} setTasks={setTasks} sortBy={sortBy} />
       </div>
 
       <div className="fixed bottom-0 left-0 right-0" ref={inputRef}>
-        <div className="max-w-xl mx-auto pb-12">
+        <div className="max-w-md mx-auto pb-12">
           <AnimatePresence>
             {isInputVisible && (
               <AIInput

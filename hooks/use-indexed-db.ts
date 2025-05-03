@@ -2,6 +2,32 @@ import { useState, useEffect, useCallback } from "react";
 import Dexie from "dexie";
 import { TaskItem } from "@/types";
 import { serializeTask } from "@/lib/utils/task";
+import { z } from "zod";
+import { toast } from "sonner";
+
+const TaskItemSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  completed: z.boolean(),
+  date: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val)),
+  created_at: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val))
+    .optional(),
+  updated_at: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val))
+    .optional(),
+  scheduled_time: z.string().optional(),
+  priority: z.enum(["high", "medium", "low"]).optional(),
+});
+
+const TaskArraySchema = z.array(TaskItemSchema);
 
 class AppDatabase extends Dexie {
   tasks: Dexie.Table<TaskItem, string>;
@@ -114,13 +140,20 @@ export function useIndexedDB<T>(storeName: string, initialValue: T) {
           reader.onload = async (e) => {
             try {
               const content = e.target?.result as string;
-              const importedTasks = JSON.parse(content) as TaskItem[];
+              const parsedData = JSON.parse(content);
 
-              // Validate the imported data structure
-              if (!Array.isArray(importedTasks)) {
-                resolve({ success: false, message: "Invalid data format" });
+              // Validate the imported data structure using Zod schema
+              const result = TaskArraySchema.safeParse(parsedData);
+
+              if (!result.success) {
+                const errorMessage =
+                  "Invalid data format: " + result.error.message;
+                toast.error(errorMessage);
+                resolve({ success: false, message: errorMessage });
                 return;
               }
+
+              const importedTasks = result.data;
 
               // Update IndexedDB and state
               await db.transaction("rw", db.tasks, async () => {
@@ -140,23 +173,29 @@ export function useIndexedDB<T>(storeName: string, initialValue: T) {
                 message: `Imported ${importedTasks.length} tasks successfully`,
               });
             } catch (error) {
-              console.error("Failed to parse imported data:", error);
+              const errorMessage = "Failed to parse imported data";
+              console.error(errorMessage, error);
+              toast.error(errorMessage);
               resolve({
                 success: false,
-                message: "Failed to parse imported data",
+                message: errorMessage,
               });
             }
           };
 
           reader.onerror = () => {
-            resolve({ success: false, message: "Failed to read file" });
+            const errorMessage = "Failed to read file";
+            toast.error(errorMessage);
+            resolve({ success: false, message: errorMessage });
           };
 
           reader.readAsText(file);
         });
       } catch (error) {
-        console.error("Failed to import data:", error);
-        return { success: false, message: "Failed to import data" };
+        const errorMessage = "Failed to import data";
+        console.error(errorMessage, error);
+        toast.error(errorMessage);
+        return { success: false, message: errorMessage };
       }
     },
     [storeName, setStoredValue]
