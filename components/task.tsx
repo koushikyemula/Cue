@@ -8,18 +8,26 @@ import {
   sortTasks,
 } from "@/lib/utils/task";
 import { SortOption, TaskItem } from "@/types";
-import { CalendarBlank } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Progress } from "./progress";
 import { TaskList } from "./task-list";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Progress } from "./progress";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { AIInput } from "./ui/ai-input";
 
-const EmptyState = () => (
+const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
   <div className="flex flex-col items-center justify-center text-center min-h-[50vh] p-8 space-y-2">
-    <p className="text-sm text-muted-foreground max-w-[280px]">
-      Press <kbd className="bg-muted px-1 rounded">⌘K</kbd> to add a new task
-    </p>
+    {!isMobile && (
+      <p className="text-sm text-muted-foreground max-w-[280px]">
+        Press <kbd className="bg-muted px-1 rounded">⌘K</kbd> to add a new task
+      </p>
+    )}
+    {isMobile && (
+      <p className="text-sm text-muted-foreground max-w-[280px]">
+        Use the input box below to add a new task
+      </p>
+    )}
   </div>
 );
 
@@ -47,14 +55,25 @@ interface TaskProps {
   initialTasks: TaskItem[];
   setTasks: (value: TaskItem[] | ((val: TaskItem[]) => TaskItem[])) => void;
   sortBy: SortOption;
+  isInputVisible?: boolean;
+  onInputClose?: () => void;
+  onInputSubmit?: (text: string) => void;
 }
 
-export default function Task({ initialTasks, setTasks, sortBy }: TaskProps) {
+export default function Task({
+  initialTasks,
+  setTasks,
+  sortBy,
+  isInputVisible = false,
+  onInputClose = () => {},
+  onInputSubmit = () => {},
+}: TaskProps) {
   const [isClientLoaded, setIsClientLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     setIsClientLoaded(true);
@@ -215,7 +234,7 @@ export default function Task({ initialTasks, setTasks, sortBy }: TaskProps) {
         {!isClientLoaded ? (
           <TaskSkeleton />
         ) : sortedTasks.length === 0 ? (
-          <EmptyState />
+          <EmptyState isMobile={isMobile} />
         ) : (
           <TaskList
             tasks={sortedTasks}
@@ -230,6 +249,15 @@ export default function Task({ initialTasks, setTasks, sortBy }: TaskProps) {
           />
         )}
       </div>
+
+      {isMobile && !isInputVisible && (
+        <AIInput
+          placeholder="Enter your task here..."
+          minHeight={50}
+          onClose={onInputClose}
+          onSubmit={onInputSubmit}
+        />
+      )}
     </div>
   );
 }

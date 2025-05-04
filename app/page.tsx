@@ -20,6 +20,7 @@ import { CloudFog } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -30,6 +31,7 @@ function HomePage() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const inputRef = useRef<HTMLDivElement>(null);
   const [syncOpen, setSyncOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useHotkeys("meta+k, ctrl+k", (e) => {
     e.preventDefault();
@@ -315,12 +317,19 @@ function HomePage() {
         </Popover>
       </div>
       <div className="flex-1 w-full max-w-md mx-auto px-4 pt-5">
-        <Task initialTasks={tasks} setTasks={setTasks} sortBy={sortBy} />
+        <Task
+          initialTasks={tasks}
+          setTasks={setTasks}
+          sortBy={sortBy}
+          isInputVisible={isInputVisible}
+          onInputClose={handleClose}
+          onInputSubmit={handleSubmit}
+        />
       </div>
       <div className="fixed bottom-0 left-0 right-0" ref={inputRef}>
         <div className="max-w-md mx-auto pb-12">
           <AnimatePresence>
-            {isInputVisible && (
+            {isInputVisible && !isMobile && (
               <AIInput
                 placeholder="Enter your task here..."
                 minHeight={50}
