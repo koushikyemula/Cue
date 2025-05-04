@@ -16,6 +16,7 @@ export type SortOption =
   | "completed"
   | "priority";
 
+
 export interface TaskListProps {
   tasks: TaskItem[];
   onToggle: (id: string) => void;

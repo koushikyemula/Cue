@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Pencil, Check, Clock, Flag } from "lucide-react";
+import { X, Pencil, Check, Clock } from "lucide-react";
 import { CircleCheckbox } from "@/components/ui/circle-checkbox";
 import { TaskListProps } from "@/types";
 import { useRef, useCallback, useState, useEffect, memo } from "react";
@@ -15,20 +15,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const PriorityFlag = memo(
+const PriorityIndicator = memo(
   ({ priority }: { priority?: "high" | "medium" | "low" }) => {
     if (!priority) return null;
 
-    const colorMap = {
-      high: "text-red-500 dark:text-red-400",
-      medium: "text-orange-500 dark:text-orange-400",
-      low: "text-blue-500 dark:text-blue-400",
+    const styleMap = {
+      high: "bg-red-500/20 border-red-500/50 text-red-400",
+      medium: "bg-orange-500/20 border-orange-500/50 text-orange-400",
+      low: "bg-blue-500/20 border-blue-500/50 text-blue-400",
     };
-
-    return <Flag className={cn("h-3.5 w-3.5", colorMap[priority])} />;
+    return (
+      <div
+        className={cn(
+          "text-xs px-1.5 py-0.5 rounded-sm border",
+          styleMap[priority]
+        )}
+      >
+        {priority}
+      </div>
+    );
   }
 );
-PriorityFlag.displayName = "PriorityFlag";
+PriorityIndicator.displayName = "PriorityIndicator";
 
 const TimeDisplay = memo(({ time }: { time?: string }) => {
   if (!time) return null;
@@ -139,47 +147,47 @@ const TaskEditForm = memo(
             value={editPriority || undefined}
             onValueChange={(value: any) => setEditPriority(value)}
           >
-            <SelectTrigger className="h-12 bg-background border border-border/20 rounded-md px-3 flex-1 min-w-[140px]">
+            <SelectTrigger className="h-12 bg-background/50 backdrop-blur-sm border border-border/10 rounded-md px-3 flex-1 min-w-[140px] transition-all duration-200 hover:border-border/30 focus:border-border/40 focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border-border/20 bg-neutral-900/90 backdrop-blur-md dark:bg-neutral-900/90 rounded-md overflow-hidden">
               <SelectItem
                 value="high"
-                className="text-red-500 dark:text-red-400"
+                className="text-red-500 dark:text-red-400 transition-colors duration-150 hover:bg-neutral-800/50 focus:bg-neutral-800/70"
               >
                 <div className="flex items-center gap-2">
-                  <Flag className="h-3.5 w-3.5" />
+                  <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                    <span className="h-3 w-3 rounded-full bg-red-500/90"></span>
+                  </span>
                   <span>High</span>
                 </div>
               </SelectItem>
               <SelectItem
                 value="medium"
-                className="text-orange-500 dark:text-orange-400"
+                className="text-orange-500 dark:text-orange-400 transition-colors duration-150 hover:bg-neutral-800/50 focus:bg-neutral-800/70"
               >
                 <div className="flex items-center gap-2">
-                  <Flag className="h-3.5 w-3.5" />
+                  <span className="h-3 w-3 rounded-full bg-orange-500/90"></span>
                   <span>Medium</span>
                 </div>
               </SelectItem>
               <SelectItem
                 value="low"
-                className="text-blue-500 dark:text-blue-400"
+                className="text-blue-500 dark:text-blue-400 transition-colors duration-150 hover:bg-neutral-800/50 focus:bg-neutral-800/70"
               >
                 <div className="flex items-center gap-2">
-                  <Flag className="h-3.5 w-3.5" />
+                  <span className="h-3 w-3 rounded-full bg-blue-500/90"></span>
                   <span>Low</span>
                 </div>
               </SelectItem>
             </SelectContent>
           </Select>
-
           <TimePicker
             time={editTime}
             onChange={setEditTime}
-            className="border border-border/20 bg-neutral-800 hover:bg-neutral-700/40! rounded-md flex-1 min-w-[140px]"
+            className="border border-border/20 bg-accent  hover:cursor-pointer hover:bg-neutral-700/90  rounded-md flex-1 min-w-[140px]"
           />
         </div>
-
         <div className="flex justify-end gap-3 mt-1">
           <Button
             variant="outline"
@@ -236,22 +244,24 @@ const TaskView = memo(
             <motion.span
               layout
               className={cn(
-                "truncate text-[15px] transition-colors duration-100",
+                "text-[15px] transition-colors duration-100 break-words whitespace-pre-line",
                 task.completed && "line-through text-muted-foreground/50"
               )}
             >
               {task.text}
             </motion.span>
-            <PriorityFlag priority={task.priority} />
           </motion.div>
-          <TimeDisplay time={task.scheduled_time} />
+          <motion.div layout className="flex items-center gap-2 mt-1">
+            <TimeDisplay time={task.scheduled_time} />
+            {task.priority && <PriorityIndicator priority={task.priority} />}
+          </motion.div>
         </motion.div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
             className={cn(
-              "h-7 w-7 text-muted-foreground hover:text-foreground rounded-full",
+              "h-7 w-7 text-muted-foreground hover:text-foreground rounded-xl",
               isMobile
                 ? "opacity-80"
                 : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -264,7 +274,7 @@ const TaskView = memo(
             variant="ghost"
             size="icon"
             className={cn(
-              "h-7 w-7 text-muted-foreground hover:text-destructive rounded-full",
+              "h-7 w-7 text-muted-foreground hover:text-destructive rounded-xl",
               isMobile
                 ? "opacity-80"
                 : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -339,30 +349,14 @@ export function TaskList({
             layout="position"
             layoutDependency={editingTaskId === task.id}
             className={cn(
-              "group flex items-center py-3 px-4 gap-3.5",
-              task.completed ? "text-muted-foreground/50" : "hover:bg-muted/40",
-              editingTaskId === task.id ? "bg-muted/60" : "",
+              "group flex items-center py-3 px-4 gap-3.5 rounded-md",
+              task.completed && editingTaskId !== task.id
+                ? "text-muted-foreground/50"
+                : "hover:bg-muted/40",
+              editingTaskId === task.id && "bg-muted/60",
               "transition-colors"
             )}
           >
-            <motion.div
-              layout="position"
-              className={cn(
-                "mt-[6px]",
-                editingTaskId === task.id && "self-start"
-              )}
-            >
-              <CircleCheckbox
-                checked={task.completed}
-                onCheckedChange={() => onToggle(task.id)}
-                className={cn(
-                  task.completed
-                    ? "border-muted-foreground/50 bg-muted-foreground/20"
-                    : "hover:border-primary/50"
-                )}
-              />
-            </motion.div>
-
             {editingTaskId === task.id ? (
               <TaskEditForm
                 task={task}
@@ -379,6 +373,21 @@ export function TaskList({
               <>
                 <motion.div
                   layout="position"
+                  className={cn(editingTaskId === task.id && "self-start")}
+                >
+                  <CircleCheckbox
+                    checked={task.completed}
+                    onCheckedChange={() => onToggle(task.id)}
+                    className={cn(
+                      "hover:cursor-pointer",
+                      task.completed
+                        ? "border-muted-foreground/50 bg-muted-foreground/20"
+                        : "hover:border-primary/50"
+                    )}
+                  />
+                </motion.div>
+                <motion.div
+                  layout="position"
                   className="flex-1 flex flex-col min-w-0 cursor-pointer"
                   onClick={() => onToggle(task.id)}
                 >
@@ -389,16 +398,23 @@ export function TaskList({
                     <motion.span
                       layout="position"
                       className={cn(
-                        "truncate text-[15px] transition-colors duration-100",
+                        "text-[15px] transition-colors duration-100 break-words whitespace-pre-line",
                         task.completed &&
                           "line-through text-muted-foreground/50"
                       )}
                     >
                       {task.text}
                     </motion.span>
-                    <PriorityFlag priority={task.priority} />
                   </motion.div>
-                  <TimeDisplay time={task.scheduled_time} />
+                  <motion.div
+                    layout="position"
+                    className="flex items-center gap-2 mt-1"
+                  >
+                    <TimeDisplay time={task.scheduled_time} />
+                    {task.priority && (
+                      <PriorityIndicator priority={task.priority} />
+                    )}
+                  </motion.div>
                 </motion.div>
 
                 <motion.div
@@ -409,7 +425,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-7 w-7 text-muted-foreground hover:text-foreground rounded-full",
+                      "h-7 w-7 text-muted-foreground hover:text-foreground rounded-xl",
                       isMobile
                         ? "opacity-80"
                         : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -425,7 +441,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-7 w-7 text-muted-foreground hover:text-destructive rounded-full",
+                      "h-7 w-7 text-muted-foreground hover:text-destructive rounded-xl",
                       isMobile
                         ? "opacity-80"
                         : "opacity-0 group-hover:opacity-80 transition-opacity"
