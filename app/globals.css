@@ -125,6 +125,10 @@
   body {
     @apply bg-background text-foreground h-full;
     letter-spacing: var(--tracking-normal);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
 }
 

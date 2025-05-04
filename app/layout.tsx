@@ -6,6 +6,7 @@ import { InstallPWA } from "@/components/install-pwa";
 import { OfflineBanner } from "@/components/offline-banner";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
           <InstallPWA promptDelay={3000} />
           <OfflineBanner />
           <Providers>{children}</Providers>
+          <Toaster />
           <Analytics />
         </body>
       </html>

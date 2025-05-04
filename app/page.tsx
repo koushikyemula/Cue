@@ -198,6 +198,50 @@ function HomePage() {
 
         const newTasks = processActions(actions, text, selectedDate);
         setTasks(newTasks);
+
+        // Add toast notifications based on actions performed
+        if (actions.length > 0) {
+          actions.forEach((action) => {
+            switch (action.action) {
+              case "add":
+                toast.success("Task created", {
+                  description: action.text || text,
+                  duration: 2000,
+                });
+                break;
+              case "delete":
+                toast.success("Task deleted", {
+                  duration: 2000,
+                });
+                break;
+              case "mark":
+                toast.success(
+                  `Task marked ${
+                    action.status === "complete" ? "complete" : "incomplete"
+                  }`,
+                  {
+                    duration: 2000,
+                  }
+                );
+                break;
+              case "edit":
+                toast.success("Task updated", {
+                  duration: 2000,
+                });
+                break;
+              case "clear":
+                toast.success(`Cleared ${action.listToClear} tasks`, {
+                  duration: 2000,
+                });
+                break;
+              case "sort":
+                toast.success(`Sorted by ${action.sortBy}`, {
+                  duration: 2000,
+                });
+                break;
+            }
+          });
+        }
       } catch (error) {
         console.error("AI Action failed:", error);
         setTasks([
@@ -209,6 +253,11 @@ function HomePage() {
             date: new Date(),
           }),
         ]);
+
+        toast.success("Task created", {
+          description: text,
+          duration: 2000,
+        });
       }
     },
     [tasks, processActions, setTasks]
@@ -222,13 +271,17 @@ function HomePage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-muted-foreground dark:hover:text-foreground"
+              className="h-8 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
             >
               <CloudFog className="h-4 w-4" />
               <span className="text-xs">Sync</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[220px] p-0" align="end" sideOffset={8}>
+          <PopoverContent
+            className="w-[220px] p-0 border-border/40 bg-neutral-900 dark:bg-neutral-900/90 shadow-md"
+            align="end"
+            sideOffset={8}
+          >
             <div className="flex flex-col">
               <div className="px-3 pt-3 pb-2">
                 <h3 className="text-sm font-medium">Data Sync</h3>
@@ -241,7 +294,7 @@ function HomePage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleExport}
-                  className="w-full justify-start text-xs hover:cursor-pointer h-8 gap-2 px-2 font-normal"
+                  className="w-full justify-start text-xs hover:cursor-pointer h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-white hover:bg-neutral-800/60"
                 >
                   <CloudArrowDown weight="light" className="h-3.5 w-3.5" />
                   Export tasks as JSON
@@ -250,7 +303,7 @@ function HomePage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start hover:cursor-pointer text-xs h-8 gap-2 px-2 font-normal"
+                    className="w-full justify-start hover:cursor-pointer text-xs h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-white hover:bg-neutral-800/60"
                   >
                     <CloudArrowUp weight="light" className="h-3.5 w-3.5" />
                     Import from JSON file
@@ -264,7 +317,6 @@ function HomePage() {
       <div className="flex-1 w-full max-w-md mx-auto px-4 pt-5">
         <Task initialTasks={tasks} setTasks={setTasks} sortBy={sortBy} />
       </div>
-
       <div className="fixed bottom-0 left-0 right-0" ref={inputRef}>
         <div className="max-w-md mx-auto pb-12">
           <AnimatePresence>
