@@ -104,7 +104,7 @@ export function AIInput({
             isFocused
               ? "border-black/30 dark:border-white/30 shadow-sm"
               : "border-black/10 dark:border-white/10",
-            "rounded-2xl bg-black/[0.03] dark:bg-neutral-900/80"
+            " bg-black/[0.03] dark:bg-neutral-900/80"
           )}
           whileTap={{ scale: 0.995 }}
         >
@@ -125,7 +125,7 @@ export function AIInput({
                 id={id}
                 placeholder={placeholder}
                 className={cn(
-                  "max-w-xl w-full rounded-2xl pr-10 py-4 placeholder:text-black/50 dark:placeholder:text-neutral-400",
+                  "max-w-xl w-full pr-10 py-4 placeholder:text-black/50 dark:placeholder:text-neutral-400",
                   "border-none focus:ring-0 text-black dark:text-white resize-none text-wrap bg-transparent",
                   "focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.2]",
                   `min-h-[${minHeight}px] transition-all duration-200`

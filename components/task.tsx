@@ -31,10 +31,10 @@ const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
   </div>
 );
 
-export const calculateProgress = (todos: TaskItem[]) => {
-  const completedCount = todos.filter((todo) => todo.completed).length;
-  return todos.length > 0
-    ? Math.round((completedCount / todos.length) * 100)
+export const calculateProgress = (tasks: TaskItem[]) => {
+  const completedCount = tasks.filter((task) => task.completed).length;
+  return tasks.length > 0
+    ? Math.round((completedCount / tasks.length) * 100)
     : 0;
 };
 
@@ -196,15 +196,21 @@ export default function Task({
               <span className="font-medium text-foreground dark:text-zinc-200">
                 {formatDate(selectedDate)}
               </span>
-              <span className="text-xs font-normal text-muted-foreground dark:text-neutral-400">
-                {taskCounts.remaining} to do
+              <span className="flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400">
+                <span>{taskCounts.remaining}</span>
+                <span className="ml-1">
+                  {taskCounts.remaining === 1 ? "task" : "tasks"}
+                </span>
                 {taskCounts.completed > 0 && (
-                  <>
-                    <span className="mx-1 text-muted-foreground/50">•</span>
-                    <span className="text-muted-foreground/60 dark:text-neutral-500">
-                      {taskCounts.completed} completed
+                  <span className="flex items-center ml-1">
+                    <span className="h-1 w-1 rounded-full bg-muted-foreground/30 mx-1.5" />
+                    <span className="text-muted-foreground/70 dark:text-neutral-500">
+                      {taskCounts.completed}
                     </span>
-                  </>
+                    <span className="ml-1 text-muted-foreground/60 dark:text-neutral-500">
+                      done
+                    </span>
+                  </span>
                 )}
               </span>
             </Button>
