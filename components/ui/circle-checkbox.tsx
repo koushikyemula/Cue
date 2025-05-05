@@ -15,7 +15,7 @@ export const CircleCheckbox = React.forwardRef<
       data-slot="checkbox"
       ref={ref}
       className={cn(
-        "peer size-5 shrink-0 rounded-full border border-input",
+        "peer size-5 shrink-0   border border-input",
         "shadow-xs transition-all flex items-center justify-center",
         "dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
         "dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary",

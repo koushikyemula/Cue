@@ -25,12 +25,7 @@ const PriorityIndicator = memo(
       low: "bg-blue-500/20 border-blue-500/50 text-blue-400",
     };
     return (
-      <div
-        className={cn(
-          "text-xs px-1.5 py-0.5 rounded-sm border",
-          styleMap[priority]
-        )}
-      >
+      <div className={cn("text-xs px-1.5 py-0.5 border", styleMap[priority])}>
         {priority}
       </div>
     );
@@ -137,7 +132,7 @@ const TaskEditForm = memo(
             onChange={handleEditInputChange}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full h-12 py-2 text-base font-normal bg-background border border-border/20 rounded-md shadow-sm focus-visible:ring-1 focus-visible:ring-primary px-3"
+            className="w-full h-12 py-2 text-base font-normal bg-background border border-border/20  shadow-sm focus-visible:ring-1 focus-visible:ring-primary px-3"
             placeholder="Edit task..."
           />
         </div>
@@ -147,17 +142,17 @@ const TaskEditForm = memo(
             value={editPriority || undefined}
             onValueChange={(value: any) => setEditPriority(value)}
           >
-            <SelectTrigger className="h-12 bg-background/50 backdrop-blur-sm border border-border/10 rounded-md px-3 flex-1 min-w-[140px] transition-all duration-200 hover:border-border/30 focus:border-border/40 focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="h-12 bg-background/50 backdrop-blur-sm border border-border/10 px-3 flex-1 min-w-[140px] transition-all duration-200 hover:border-border/30 focus:border-border/40 focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
-            <SelectContent className="border-border/20 bg-neutral-800/90 dark:bg-neutral-800/90 backdrop-blur-md rounded-md overflow-hidden">
+            <SelectContent className="border-border/20 bg-neutral-800/90 dark:bg-neutral-800/90 backdrop-blur-md   overflow-hidden">
               <SelectItem
                 value="high"
                 className="text-red-500 dark:text-red-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
               >
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-3.5 w-3.5 items-center justify-center">
-                    <span className="h-3 w-3 rounded-full bg-red-500/90"></span>
+                    <span className="h-3 w-3   bg-red-500/90"></span>
                   </span>
                   <span>High</span>
                 </div>
@@ -167,7 +162,7 @@ const TaskEditForm = memo(
                 className="text-orange-500 dark:text-orange-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
               >
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-orange-500/90"></span>
+                  <span className="h-3 w-3   bg-orange-500/90"></span>
                   <span>Medium</span>
                 </div>
               </SelectItem>
@@ -176,7 +171,7 @@ const TaskEditForm = memo(
                 className="text-blue-500 dark:text-blue-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
               >
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-blue-500/90"></span>
+                  <span className="h-3 w-3   bg-blue-500/90"></span>
                   <span>Low</span>
                 </div>
               </SelectItem>
@@ -185,20 +180,20 @@ const TaskEditForm = memo(
           <TimePicker
             time={editTime}
             onChange={setEditTime}
-            className="border border-border/20 bg-accent  hover:cursor-pointer hover:bg-neutral-700/90  rounded-md flex-1 min-w-[140px]"
+            className="border border-border/20 bg-accent  hover:cursor-pointer hover:bg-neutral-700/90    flex-1 min-w-[140px]"
           />
         </div>
         <div className="flex justify-end gap-3 mt-1">
           <Button
             variant="outline"
-            className="rounded-md text-sm font-medium bg-muted/30 hover:bg-muted/50 border-border/10 text-muted-foreground"
+            className="  text-sm font-medium bg-muted/30 hover:bg-muted/50 border-border/10 text-muted-foreground"
             onClick={cancelEditing}
           >
             Cancel
           </Button>
           <Button
             variant="default"
-            className="rounded-md text-sm font-medium"
+            className="  text-sm font-medium"
             onClick={handleSave}
           >
             Save
@@ -261,7 +256,7 @@ const TaskView = memo(
             variant="ghost"
             size="icon"
             className={cn(
-              "h-7 w-7 text-muted-foreground hover:text-foreground rounded-xl",
+              "h-7 w-7 text-muted-foreground hover:text-foreground  ",
               isMobile
                 ? "opacity-80"
                 : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -274,7 +269,7 @@ const TaskView = memo(
             variant="ghost"
             size="icon"
             className={cn(
-              "h-7 w-7 text-muted-foreground hover:text-destructive rounded-xl",
+              "h-7 w-7 text-muted-foreground hover:text-destructive  ",
               isMobile
                 ? "opacity-80"
                 : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -349,7 +344,7 @@ export function TaskList({
             layout="position"
             layoutDependency={editingTaskId === task.id}
             className={cn(
-              "group flex items-center py-3 px-4 gap-3.5 rounded-md",
+              "group flex items-center py-3 px-4 gap-3.5  ",
               task.completed && editingTaskId !== task.id
                 ? "text-muted-foreground/50"
                 : "hover:bg-muted/40",
@@ -425,7 +420,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-7 w-7 text-muted-foreground hover:text-foreground rounded-xl",
+                      "h-7 w-7 text-muted-foreground hover:text-foreground  ",
                       isMobile
                         ? "opacity-80"
                         : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -441,7 +436,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-7 w-7 text-muted-foreground hover:text-destructive rounded-xl",
+                      "h-7 w-7 text-muted-foreground hover:text-destructive  ",
                       isMobile
                         ? "opacity-80"
                         : "opacity-0 group-hover:opacity-80 transition-opacity"

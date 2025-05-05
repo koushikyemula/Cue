@@ -145,7 +145,7 @@ export function AIInput({
           <motion.button
             onClick={handleSubmit}
             className={cn(
-              "absolute right-3 top-1/2 -translate-y-1/2 rounded-xl py-1 px-1",
+              "absolute right-3 top-1/2 -translate-y-1/2   py-1 px-1",
               submitted ? "bg-none" : "bg-black/5 dark:bg-neutral-800/60"
             )}
             type="button"
@@ -153,7 +153,7 @@ export function AIInput({
           >
             {submitted ? (
               <div
-                className="w-4 h-4 bg-black dark:bg-white rounded-sm animate-spin transition duration-700"
+                className="w-4 h-4 bg-black dark:bg-white   animate-spin transition duration-700"
                 style={{ animationDuration: "3s" }}
               />
             ) : (

@@ -24,7 +24,7 @@ const ThemeButton: FC<ThemeButtonProps> = ({
     <button
       onClick={onClick}
       className={cn(
-        "rounded-full p-1.5 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "  p-1.5 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         isActive
           ? "bg-background text-foreground shadow-sm"
           : "text-muted-foreground hover:bg-muted-foreground/10"
@@ -45,13 +45,11 @@ export const ThemeToggleButton: FC = (): ReactElement => {
   }, []);
 
   if (!isMounted) {
-    return (
-      <div className="h-9 w-[110px] rounded-full bg-muted animate-pulse" />
-    );
+    return <div className="h-9 w-[110px]   bg-muted animate-pulse" />;
   }
 
   return (
-    <div className="flex items-center space-x-1 rounded-full bg-muted p-0.5">
+    <div className="flex items-center space-x-1   bg-muted p-0.5">
       <ThemeButton
         mode="Light"
         icon={Sun}

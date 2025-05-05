@@ -36,7 +36,7 @@ export function OfflineBanner() {
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform rounded-md border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm shadow-lg transition-all duration-300 ease-in-out ${
+      className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm shadow-lg transition-all duration-300 ease-in-out ${
         showBanner
           ? "opacity-100 translate-y-0"
           : "pointer-events-none opacity-0 translate-y-4"

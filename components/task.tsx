@@ -42,9 +42,9 @@ const TaskSkeleton = () => (
   <div className="space-y-1" aria-label="Loading task items">
     {[...Array(3)].map((_, i) => (
       <div key={i} className="px-4 py-2.5 flex items-center gap-3">
-        <div className="w-5 h-5 rounded-full bg-muted-foreground/20 animate-pulse" />
+        <div className="w-5 h-5   bg-muted-foreground/20 animate-pulse" />
         <div className="flex-1">
-          <div className="h-2.5 w-32 rounded-full bg-muted-foreground/20 animate-pulse" />
+          <div className="h-2.5 w-32   bg-muted-foreground/20 animate-pulse" />
         </div>
       </div>
     ))}
@@ -189,7 +189,7 @@ export default function Task({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="group h-9 px-4 py-2 hover:cursor-pointer rounded-xl bg-neutral-900 dark:bg-neutral-900/80 border border-border/40 hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-200 flex items-center gap-3"
+              className="group h-9 px-4 py-2 hover:cursor-pointer   bg-neutral-900 dark:bg-neutral-900/80 border border-border/40 hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-200 flex items-center gap-3"
               aria-label={`Select date: currently ${formatDate(selectedDate)}`}
               data-calendar-trigger="true"
             >
@@ -219,7 +219,7 @@ export default function Task({
               onSelect={handleDateSelect}
               initialFocus
               disabled={(date) => date < new Date("1900-01-01")}
-              className="rounded-xl"
+              className=" "
             />
           </PopoverContent>
         </Popover>
@@ -230,7 +230,7 @@ export default function Task({
         )}
       </div>
 
-      <div className="mt-1.5 rounded-xl h-full" aria-live="polite">
+      <div className="mt-1.5   h-full" aria-live="polite">
         {!isClientLoaded ? (
           <TaskSkeleton />
         ) : sortedTasks.length === 0 ? (
