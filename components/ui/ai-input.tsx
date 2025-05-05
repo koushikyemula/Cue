@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { CornerRightUp } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { AIHelpDialog } from "@/components/ai-help-dialog";
+import { ShortcutsDialog } from "@/components/shortcuts-dialog";
 
 interface AIInputProps {
   id?: string;
@@ -34,6 +35,7 @@ function AIInput({
   const [submitted, setSubmitted] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight,
@@ -72,6 +74,13 @@ function AIInput({
   const handleSubmit = useCallback(() => {
     if (inputValue.trim() === "?help") {
       setShowHelpDialog(true);
+      setInputValue("");
+      adjustHeight(true);
+      return;
+    }
+
+    if (inputValue.trim() === "?shortcuts") {
+      setShowShortcutsDialog(true);
       setInputValue("");
       adjustHeight(true);
       return;
@@ -184,6 +193,10 @@ function AIInput({
   return (
     <>
       <AIHelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+      <ShortcutsDialog
+        open={showShortcutsDialog}
+        onOpenChange={setShowShortcutsDialog}
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -238,7 +251,11 @@ function AIInput({
             <span className="font-mono bg-neutral-800/70 px-1 py-0.5 rounded text-neutral-400">
               ?help
             </span>{" "}
-            for instructions
+            or{" "}
+            <span className="font-mono bg-neutral-800/70 px-1 py-0.5 rounded text-neutral-400">
+              ?shortcuts
+            </span>{" "}
+            for assistance
           </p>
         </div>
       </motion.div>
