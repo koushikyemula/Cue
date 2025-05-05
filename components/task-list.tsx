@@ -150,10 +150,10 @@ const TaskEditForm = memo(
             <SelectTrigger className="h-12 bg-background/50 backdrop-blur-sm border border-border/10 rounded-md px-3 flex-1 min-w-[140px] transition-all duration-200 hover:border-border/30 focus:border-border/40 focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
-            <SelectContent className="border-border/20 bg-neutral-900/90 backdrop-blur-md dark:bg-neutral-900/90 rounded-md overflow-hidden">
+            <SelectContent className="border-border/20 bg-neutral-800/90 dark:bg-neutral-800/90 backdrop-blur-md rounded-md overflow-hidden">
               <SelectItem
                 value="high"
-                className="text-red-500 dark:text-red-400 transition-colors duration-150 hover:bg-neutral-800/50 focus:bg-neutral-800/70"
+                className="text-red-500 dark:text-red-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
               >
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-3.5 w-3.5 items-center justify-center">
@@ -164,7 +164,7 @@ const TaskEditForm = memo(
               </SelectItem>
               <SelectItem
                 value="medium"
-                className="text-orange-500 dark:text-orange-400 transition-colors duration-150 hover:bg-neutral-800/50 focus:bg-neutral-800/70"
+                className="text-orange-500 dark:text-orange-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
               >
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full bg-orange-500/90"></span>
@@ -173,7 +173,7 @@ const TaskEditForm = memo(
               </SelectItem>
               <SelectItem
                 value="low"
-                className="text-blue-500 dark:text-blue-400 transition-colors duration-150 hover:bg-neutral-800/50 focus:bg-neutral-800/70"
+                className="text-blue-500 dark:text-blue-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
               >
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full bg-blue-500/90"></span>

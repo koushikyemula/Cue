@@ -1,6 +1,7 @@
 "use client";
 
 import { determineAction } from "@/app/actions";
+import { SettingsPopover, UserSettings } from "@/components/settings-popover";
 import Task from "@/components/task";
 import { AIInput } from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
@@ -10,17 +11,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useIndexedDB } from "@/hooks";
+import { useIndexedDB, useMediaQuery } from "@/hooks";
+import { cn } from "@/lib/utils";
 import { serializeTask } from "@/lib/utils/task";
 import { SortOption, TaskItem } from "@/types";
-import { CloudArrowDown, CloudArrowUp } from "@phosphor-icons/react";
+import {
+  ArrowsClockwise,
+  FileArrowDown,
+  FileArrowUp,
+} from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { AnimatePresence } from "framer-motion";
-import { CloudFog } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
-import { useMediaQuery } from "@/hooks/use-media-query";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -32,6 +36,15 @@ function HomePage() {
   const inputRef = useRef<HTMLDivElement>(null);
   const [syncOpen, setSyncOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [userSettings, setUserSettings] = useState<UserSettings>({
+    defaultAIInputOpen: false,
+  });
+
+  useEffect(() => {
+    if (userSettings.defaultAIInputOpen && !isMobile) {
+      setIsInputVisible(true);
+    }
+  }, [userSettings.defaultAIInputOpen, isMobile]);
 
   useHotkeys("meta+k, ctrl+k", (e) => {
     e.preventDefault();
@@ -39,6 +52,10 @@ function HomePage() {
   });
 
   const handleClose = useCallback(() => setIsInputVisible(false), []);
+
+  const handleSettingsChange = useCallback((settings: UserSettings) => {
+    setUserSettings(settings);
+  }, []);
 
   const handleExport = useCallback(async () => {
     try {
@@ -267,7 +284,7 @@ function HomePage() {
 
   return (
     <main className="h-full w-full flex flex-col mx-auto">
-      <div className="fixed top-5 right-5 z-40">
+      <div className="fixed top-5 right-5 z-40 flex gap-2">
         <Popover open={syncOpen} onOpenChange={setSyncOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -275,12 +292,17 @@ function HomePage() {
               size="sm"
               className="h-8 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
             >
-              <CloudFog className="h-4 w-4" />
+              <ArrowsClockwise
+                className={cn(
+                  "h-4 w-4 transition-transform duration-200",
+                  syncOpen && "rotate-90"
+                )}
+              />
               <span className="text-xs">Sync</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[220px] p-0 border-border/40 bg-neutral-900 dark:bg-neutral-900/90 shadow-md"
+            className="w-[230px] p-0 border-border/40 bg-neutral-800/90 dark:bg-neutral-800/90 shadow-md"
             align="end"
             sideOffset={8}
           >
@@ -296,18 +318,18 @@ function HomePage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleExport}
-                  className="w-full justify-start text-xs hover:cursor-pointer h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-white hover:bg-neutral-800/60"
+                  className="w-full justify-start text-xs hover:cursor-pointer h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
                 >
-                  <CloudArrowDown weight="light" className="h-3.5 w-3.5" />
+                  <FileArrowUp weight="light" className="size-4" />
                   Export tasks as JSON
                 </Button>
                 <FileInput onFileSelect={handleImport} accept=".json">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start hover:cursor-pointer text-xs h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-white hover:bg-neutral-800/60"
+                    className="w-full justify-start hover:cursor-pointer text-xs h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
                   >
-                    <CloudArrowUp weight="light" className="h-3.5 w-3.5" />
+                    <FileArrowDown weight="light" className="size-4" />
                     Import from JSON file
                   </Button>
                 </FileInput>
@@ -315,6 +337,10 @@ function HomePage() {
             </div>
           </PopoverContent>
         </Popover>
+        <SettingsPopover
+          onSettingsChange={handleSettingsChange}
+          isMobile={isMobile}
+        />
       </div>
       <div className="flex-1 w-full max-w-md mx-auto px-4 pt-5">
         <Task
