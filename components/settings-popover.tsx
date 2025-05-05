@@ -15,10 +15,12 @@ import { cn } from "@/lib/utils";
 
 export interface UserSettings {
   defaultAIInputOpen: boolean;
+  autoRemoveCompleted: boolean;
 }
 
 const defaultSettings: UserSettings = {
   defaultAIInputOpen: false,
+  autoRemoveCompleted: false,
 };
 
 export function SettingsPopover({
@@ -39,10 +41,10 @@ export function SettingsPopover({
   }, [settings, onSettingsChange]);
 
   const handleSwitchChange = useCallback(
-    (checked: boolean) => {
+    (checked: boolean, setting: keyof UserSettings) => {
       setSettings({
         ...settings,
-        defaultAIInputOpen: checked,
+        [setting]: checked,
       });
     },
     [settings, setSettings]
@@ -76,16 +78,35 @@ export function SettingsPopover({
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="ai-input-default" className="text-xs">
-                Default AI Input Open
+                Input
               </Label>
               <p className="text-xs text-muted-foreground">
-                Show AI input by default
+                Show input by default
               </p>
             </div>
             <Switch
               id="ai-input-default"
               checked={settings.defaultAIInputOpen}
-              onCheckedChange={handleSwitchChange}
+              onCheckedChange={(checked) =>
+                handleSwitchChange(checked, "defaultAIInputOpen")
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="auto-remove-completed" className="text-xs">
+                Auto Remove
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically remove completed tasks
+              </p>
+            </div>
+            <Switch
+              id="auto-remove-completed"
+              checked={settings.autoRemoveCompleted}
+              onCheckedChange={(checked) =>
+                handleSwitchChange(checked, "autoRemoveCompleted")
+              }
             />
           </div>
         </div>

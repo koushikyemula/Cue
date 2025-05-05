@@ -248,11 +248,12 @@ export default function Task({
               }}
               className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors ${
                 viewMode === "date"
-                  ? "text-muted-foreground hover:text-foreground/80"
-                  : "bg-neutral-800 text-foreground"
+                  ? "bg-neutral-800 text-foreground"
+                  : "text-muted-foreground hover:text-foreground/80"
               }`}
               aria-label="Switch to date view"
               aria-pressed={viewMode === "date"}
+              title="View tasks by date"
             >
               <CalendarIcon size={14} />
             </button>
@@ -265,11 +266,12 @@ export default function Task({
               }}
               className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors ${
                 viewMode === "all"
-                  ? "text-muted-foreground hover:text-foreground/80"
-                  : "bg-neutral-800 text-foreground"
+                  ? "bg-neutral-800 text-foreground"
+                  : "text-muted-foreground hover:text-foreground/80"
               }`}
               aria-label="Switch to all tasks view"
               aria-pressed={viewMode === "all"}
+              title="View all tasks"
             >
               <ViewIcon size={14} />
             </button>

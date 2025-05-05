@@ -39,6 +39,7 @@ function HomePage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [userSettings, setUserSettings] = useState<UserSettings>({
     defaultAIInputOpen: false,
+    autoRemoveCompleted: false,
   });
 
   useEffect(() => {
@@ -350,7 +351,25 @@ function HomePage() {
       >
         <Task
           initialTasks={tasks}
-          setTasks={setTasks}
+          setTasks={(updatedTasks) => {
+            // If it's a function update, apply autoRemoveCompleted to the result
+            if (typeof updatedTasks === "function") {
+              setTasks((prevTasks) => {
+                const newTasks = updatedTasks(prevTasks);
+                // Auto-remove completed tasks if the setting is enabled
+                return userSettings.autoRemoveCompleted
+                  ? newTasks.filter((task) => !task.completed)
+                  : newTasks;
+              });
+            } else {
+              // If it's a direct value update, apply autoRemoveCompleted directly
+              setTasks(
+                userSettings.autoRemoveCompleted
+                  ? updatedTasks.filter((task) => !task.completed)
+                  : updatedTasks
+              );
+            }
+          }}
           sortBy={sortBy}
           isInputVisible={isInputVisible}
           onInputClose={handleClose}
