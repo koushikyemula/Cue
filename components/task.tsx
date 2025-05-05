@@ -75,7 +75,6 @@ export default function Task({
   const [editText, setEditText] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Replace simple state with reducer for more predictable updates
   const [viewState, dispatch] = useReducer(
     (
       state: { mode: "date" | "all"; key: number },
@@ -237,7 +236,7 @@ export default function Task({
       className="w-full flex flex-col h-full bg-neutral-900"
       key={viewModeKey}
     >
-      <div className="flex items-center justify-between sticky bg-neutral-900 top-0 z-30 px-4 py-2 border-b border-neutral-800/40">
+      <div className="flex items-center justify-between sticky bg-neutral-900 top-0 z-30 py-2 border-b border-neutral-800/40">
         <div className="flex items-center gap-2">
           <div className="flex h-9 overflow-hidden border-input rounded-md border bg-neutral-900 dark:bg-neutral-900/80">
             <button
@@ -372,10 +371,10 @@ export default function Task({
             setEditText={setEditText}
             handleEditTask={handleEditTask}
             cancelEditing={cancelEditing}
+            viewMode={viewMode}
           />
         )}
       </div>
-
       {isMobile && !isInputVisible && (
         <div className="mt-4">
           <AIInput

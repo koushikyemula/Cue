@@ -343,7 +343,11 @@ function HomePage() {
           isMobile={isMobile}
         />
       </div>
-      <div className="flex-1 w-full max-w-md mx-auto px-4 pt-3 pb-[130px] bg-neutral-900 overflow-hidden">
+      <div
+        className={`flex-1 w-full max-w-md mx-auto px-4 pt-3 ${
+          isInputVisible ? "pb-[130px]" : "pb-6"
+        } bg-neutral-900 overflow-hidden`}
+      >
         <Task
           initialTasks={tasks}
           setTasks={setTasks}

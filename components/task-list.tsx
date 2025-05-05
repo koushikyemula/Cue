@@ -1,9 +1,10 @@
+import { formatDate } from "@/lib/utils/task";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Pencil, Check, Clock } from "lucide-react";
 import { CircleCheckbox } from "@/components/ui/circle-checkbox";
-import { TaskListProps } from "@/types";
+import { TaskItem } from "@/types";
 import { useRef, useCallback, useState, useEffect, memo } from "react";
 import { TimePicker, formatTimeDisplay } from "@/components/ui/time-picker";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { format } from "date-fns";
 
 const PriorityIndicator = memo(
   ({ priority }: { priority?: "high" | "medium" | "low" }) => {
@@ -285,6 +287,19 @@ const TaskView = memo(
 );
 TaskView.displayName = "TaskView";
 
+interface TaskListProps {
+  tasks: TaskItem[];
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onEdit: (id: string, text: string) => void;
+  editingTaskId: string | null;
+  editText: string;
+  setEditText: (text: string) => void;
+  handleEditTask: (task: TaskItem) => void;
+  cancelEditing: () => void;
+  viewMode?: "date" | "all";
+}
+
 export function TaskList({
   tasks,
   onToggle,
@@ -295,6 +310,7 @@ export function TaskList({
   setEditText,
   handleEditTask,
   cancelEditing,
+  viewMode = "date",
 }: TaskListProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [editTime, setEditTime] = useState<string>("");
@@ -344,7 +360,7 @@ export function TaskList({
             layout="position"
             layoutDependency={editingTaskId === task.id}
             className={cn(
-              "group flex items-center py-3 px-4 gap-3.5  ",
+              "group flex items-center py-2.5 px-4 gap-3.5",
               task.completed && editingTaskId !== task.id
                 ? "text-muted-foreground/50"
                 : "hover:bg-muted/40",
@@ -405,6 +421,11 @@ export function TaskList({
                     layout="position"
                     className="flex items-center gap-2 mt-1"
                   >
+                    {viewMode === "all" && task.date && (
+                      <span className="text-xs text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded">
+                        {formatDate(new Date(task.date))}
+                      </span>
+                    )}
                     <TimeDisplay time={task.scheduled_time} />
                     {task.priority && (
                       <PriorityIndicator priority={task.priority} />
