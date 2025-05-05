@@ -40,6 +40,8 @@ function HomePage() {
   const [userSettings, setUserSettings] = useState<UserSettings>({
     defaultAIInputOpen: false,
     autoRemoveCompleted: false,
+    defaultPriority: undefined,
+    defaultSortBy: "newest",
   });
 
   useEffect(() => {
@@ -47,6 +49,10 @@ function HomePage() {
       setIsInputVisible(true);
     }
   }, [userSettings.defaultAIInputOpen, isMobile]);
+
+  useEffect(() => {
+    setSortBy(userSettings.defaultSortBy);
+  }, [userSettings.defaultSortBy]);
 
   useHotkeys("meta+k, ctrl+k", (e) => {
     e.preventDefault();
@@ -102,7 +108,7 @@ function HomePage() {
                 completed: false,
                 date: taskDate,
                 scheduled_time: action.time,
-                priority: action.priority,
+                priority: action.priority || userSettings.defaultPriority,
               })
             );
             break;
@@ -200,7 +206,7 @@ function HomePage() {
 
       return newTasks;
     },
-    [tasks, handleExport]
+    [tasks, handleExport, userSettings.defaultPriority]
   );
 
   const handleSubmit = useCallback(
@@ -272,6 +278,7 @@ function HomePage() {
             text,
             completed: false,
             date: new Date(),
+            priority: userSettings.defaultPriority,
           }),
         ]);
 
@@ -281,7 +288,7 @@ function HomePage() {
         });
       }
     },
-    [tasks, processActions, setTasks]
+    [tasks, processActions, setTasks, userSettings.defaultPriority]
   );
 
   return (
