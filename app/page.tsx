@@ -25,6 +25,7 @@ import { AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -283,7 +284,7 @@ function HomePage() {
   );
 
   return (
-    <main className="h-full w-full flex flex-col mx-auto">
+    <main className="h-full w-full flex flex-col mx-auto bg-neutral-900">
       <div className="fixed top-5 right-5 z-40 flex gap-2">
         <Popover open={syncOpen} onOpenChange={setSyncOpen}>
           <PopoverTrigger asChild>
@@ -342,7 +343,7 @@ function HomePage() {
           isMobile={isMobile}
         />
       </div>
-      <div className="flex-1 w-full max-w-md mx-auto px-4 pt-5">
+      <div className="flex-1 w-full max-w-md mx-auto px-4 pt-3 pb-[130px] bg-neutral-900 overflow-hidden">
         <Task
           initialTasks={tasks}
           setTasks={setTasks}
@@ -352,20 +353,27 @@ function HomePage() {
           onInputSubmit={handleSubmit}
         />
       </div>
-      <div className="fixed bottom-0 left-0 right-0" ref={inputRef}>
-        <div className="max-w-md mx-auto pb-12">
-          <AnimatePresence>
-            {isInputVisible && !isMobile && (
+      <AnimatePresence>
+        {isInputVisible && !isMobile && (
+          <motion.div
+            className="fixed bottom-0 left-0 right-0 bg-neutral-900 shadow-lg z-50"
+            ref={inputRef}
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+          >
+            <div className="max-w-md mx-auto pb-6">
               <AIInput
                 placeholder="Enter your task here..."
                 minHeight={50}
                 onClose={handleClose}
                 onSubmit={handleSubmit}
               />
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

@@ -15,6 +15,7 @@ import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { AIInput } from "./ui/ai-input";
+import { ViewIcon, CalendarIcon } from "lucide-react";
 
 const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
   <div className="flex flex-col items-center justify-center text-center min-h-[50vh] p-8 space-y-2">
@@ -73,15 +74,26 @@ export default function Task({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"date" | "all">("date");
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     setIsClientLoaded(true);
   }, []);
 
-  const filteredTasks = useMemo(
+  const dateFilteredTasks = useMemo(
     () => (isClientLoaded ? filterTasksByDate(initialTasks, selectedDate) : []),
     [initialTasks, selectedDate, isClientLoaded]
+  );
+
+  const allTasks = useMemo(
+    () => (isClientLoaded ? initialTasks : []),
+    [initialTasks, isClientLoaded]
+  );
+
+  const filteredTasks = useMemo(
+    () => (viewMode === "date" ? dateFilteredTasks : allTasks),
+    [viewMode, dateFilteredTasks, allTasks]
   );
 
   const sortedTasks = useMemo(
@@ -92,12 +104,14 @@ export default function Task({
   const taskCounts = useMemo(() => {
     if (!isClientLoaded) return { completed: 0, remaining: 0, progress: 0 };
 
-    return {
-      completed: filteredTasks.filter((task) => task.completed).length,
-      remaining: filteredTasks.filter((task) => !task.completed).length,
-      progress: isClientLoaded ? calculateProgress(filteredTasks) : 0,
-    };
-  }, [filteredTasks, isClientLoaded]);
+    const tasks = viewMode === "date" ? dateFilteredTasks : allTasks;
+    const completed = tasks.filter((task) => task.completed).length;
+    const remaining = tasks.filter((task) => !task.completed).length;
+    const progress =
+      tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+
+    return { completed, remaining, progress };
+  }, [dateFilteredTasks, allTasks, viewMode, isClientLoaded]);
 
   const toggleTask = useCallback(
     (id: string) => {
@@ -182,30 +196,99 @@ export default function Task({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editingTaskId, cancelEditing]);
 
+  const handleViewModeChange = useCallback((mode: "date" | "all") => {
+    setViewMode(mode);
+  }, []);
+
   return (
-    <div className="w-full space-y-5">
-      <div className="flex items-center justify-between">
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="group h-9 px-4 py-2 hover:cursor-pointer   bg-neutral-900 dark:bg-neutral-900/80 border border-border/40 hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-200 flex items-center gap-3"
-              aria-label={`Select date: currently ${formatDate(selectedDate)}`}
-              data-calendar-trigger="true"
+    <div className="w-full flex flex-col h-full bg-neutral-900">
+      <div className="flex items-center justify-between sticky bg-neutral-900 top-0 z-30 px-4 py-2 border-b border-neutral-800/40">
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 overflow-hidden border-input rounded-md border bg-neutral-900 dark:bg-neutral-900/80">
+            <button
+              onClick={() => handleViewModeChange("date")}
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-all ${
+                viewMode === "date"
+                  ? "text-muted-foreground hover:text-foreground/80"
+                  : "bg-neutral-800 text-foreground"
+              }`}
+              aria-label="Switch to date view"
+              disabled={viewMode === "date"}
             >
-              <span className="font-medium text-foreground dark:text-zinc-200">
-                {formatDate(selectedDate)}
-              </span>
+              <CalendarIcon size={14} />
+            </button>
+            <button
+              onClick={() => handleViewModeChange("all")}
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-all ${
+                viewMode === "all"
+                  ? "text-muted-foreground hover:text-foreground/80"
+                  : "bg-neutral-800 text-foreground"
+              }`}
+              aria-label="Switch to all tasks view"
+              disabled={viewMode === "all"}
+            >
+              <ViewIcon size={14} />
+            </button>
+          </div>
+
+          {viewMode === "date" && (
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="group h-9 px-4 py-2 hover:cursor-pointer bg-neutral-900 dark:bg-neutral-900/80 border border-border hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-200 flex items-center gap-3"
+                  aria-label={`Select date: currently ${formatDate(
+                    selectedDate
+                  )}`}
+                  data-calendar-trigger="true"
+                >
+                  <span className="font-medium text-foreground dark:text-zinc-200">
+                    {formatDate(selectedDate)}
+                  </span>
+                  <span className="flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400">
+                    <span>{taskCounts.remaining}</span>
+                    <span className="ml-1">
+                      {taskCounts.remaining === 1 ? "task" : "tasks"}
+                    </span>
+                    {taskCounts.completed > 0 && (
+                      <span className="flex items-center ml-1">
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/30 mx-1.5" />
+                        <span className="text-muted-foreground/70 dark:text-neutral-500">
+                          {taskCounts.completed}
+                        </span>
+                        <span className="ml-1 text-muted-foreground/60 dark:text-neutral-500">
+                          done
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0 border-border/40 bg-neutral-900 dark:bg-neutral-900 shadow-md"
+                align="start"
+              >
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  disabled={(date) => date < new Date("1900-01-01")}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {viewMode === "all" && (
+            <div className="h-9 px-4 py-2 bg-neutral-900 dark:bg-neutral-900/80 border border-border/40 rounded-md flex items-center dark:border-input gap-2">
               <span className="flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400">
-                <span>{taskCounts.remaining}</span>
-                <span className="ml-1">
-                  {taskCounts.remaining === 1 ? "task" : "tasks"}
-                </span>
-                {taskCounts.completed > 0 && (
+                <span>{initialTasks.filter((t) => !t.completed).length}</span>
+                <span className="ml-1">active</span>
+                {initialTasks.filter((t) => t.completed).length > 0 && (
                   <span className="flex items-center ml-1">
                     <span className="h-1 w-1 rounded-full bg-muted-foreground/30 mx-1.5" />
                     <span className="text-muted-foreground/70 dark:text-neutral-500">
-                      {taskCounts.completed}
+                      {initialTasks.filter((t) => t.completed).length}
                     </span>
                     <span className="ml-1 text-muted-foreground/60 dark:text-neutral-500">
                       done
@@ -213,22 +296,10 @@ export default function Task({
                   </span>
                 )}
               </span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-auto p-0 border-border/40 bg-neutral-900 dark:bg-neutral-900 shadow-md"
-            align="start"
-          >
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              initialFocus
-              disabled={(date) => date < new Date("1900-01-01")}
-              className=" "
-            />
-          </PopoverContent>
-        </Popover>
+            </div>
+          )}
+        </div>
+
         {filteredTasks.length > 0 && (
           <div className="hidden sm:flex items-center animate-in fade-in duration-300">
             <Progress progress={taskCounts.progress} size={24} />
@@ -236,7 +307,12 @@ export default function Task({
         )}
       </div>
 
-      <div className="mt-1.5   h-full" aria-live="polite">
+      <div className="pt-2 bg-neutral-900 relative z-10"></div>
+
+      <div
+        className="flex-1 overflow-y-auto mt-0 relative z-0"
+        aria-live="polite"
+      >
         {!isClientLoaded ? (
           <TaskSkeleton />
         ) : sortedTasks.length === 0 ? (
@@ -257,12 +333,14 @@ export default function Task({
       </div>
 
       {isMobile && !isInputVisible && (
-        <AIInput
-          placeholder="Enter your task here..."
-          minHeight={50}
-          onClose={onInputClose}
-          onSubmit={onInputSubmit}
-        />
+        <div className="mt-4">
+          <AIInput
+            placeholder="Enter your task here..."
+            minHeight={50}
+            onClose={onInputClose}
+            onSubmit={onInputSubmit}
+          />
+        </div>
       )}
     </div>
   );

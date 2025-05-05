@@ -27,12 +27,15 @@ export const serializeTask = (task: TaskItem): TaskItem => {
 export const formatDate = (date: Date) => {
   const today = new Date();
   const tomorrow = new Date(today);
+  const yesterday = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-
+  yesterday.setDate(yesterday.getDate() - 1);
   if (date.toDateString() === today.toDateString()) {
     return "Today";
   } else if (date.toDateString() === tomorrow.toDateString()) {
-    return `Tomorrow, ${format(date, "EEE, d MMM")}`;
+    return `Tomorrow`;
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday`;
   } else {
     return format(date, "EEE, d MMM");
   }

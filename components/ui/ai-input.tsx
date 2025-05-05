@@ -104,7 +104,7 @@ export function AIInput({
             isFocused
               ? "border-black/30 dark:border-white/30 shadow-sm"
               : "border-black/10 dark:border-white/10",
-            " bg-black/[0.03] dark:bg-neutral-900/80"
+            " bg-black/[0.03] dark:bg-neutral-900"
           )}
           whileTap={{ scale: 0.995 }}
         >
@@ -126,7 +126,7 @@ export function AIInput({
                 placeholder={placeholder}
                 className={cn(
                   "max-w-xl w-full pr-10 py-4 placeholder:text-black/50 dark:placeholder:text-neutral-400",
-                  "border-none focus:ring-0 text-black dark:text-white resize-none text-wrap bg-transparent",
+                  "border-none focus:ring-0 text-black dark:text-white resize-none text-wrap",
                   "focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.2]",
                   `min-h-[${minHeight}px] transition-all duration-200`
                 )}
@@ -146,7 +146,7 @@ export function AIInput({
             onClick={handleSubmit}
             className={cn(
               "absolute right-3 top-1/2 -translate-y-1/2   py-1 px-1",
-              submitted ? "bg-none" : "bg-black/5 dark:bg-neutral-800/60"
+              submitted ? "bg-none" : "bg-black/5 dark:bg-neutral-800"
             )}
             type="button"
             disabled={submitted || !inputValue.trim()}
