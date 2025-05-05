@@ -8,7 +8,7 @@ import {
   sortTasks,
 } from "@/lib/utils/task";
 import { SortOption, TaskItem } from "@/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useReducer } from "react";
 import { Progress } from "./progress";
 import { TaskList } from "./task-list";
 import { Calendar } from "./ui/calendar";
@@ -74,7 +74,28 @@ export default function Task({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"date" | "all">("date");
+
+  // Replace simple state with reducer for more predictable updates
+  const [viewState, dispatch] = useReducer(
+    (
+      state: { mode: "date" | "all"; key: number },
+      action: { type: string; payload?: any }
+    ) => {
+      switch (action.type) {
+        case "SET_DATE_MODE":
+          return { mode: "date" as const, key: state.key + 1 };
+        case "SET_ALL_MODE":
+          return { mode: "all" as const, key: state.key + 1 };
+        default:
+          return state;
+      }
+    },
+    { mode: "date", key: 0 }
+  );
+
+  const viewMode = viewState.mode;
+  const viewModeKey = viewState.key;
+
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
@@ -91,27 +112,31 @@ export default function Task({
     [initialTasks, isClientLoaded]
   );
 
-  const filteredTasks = useMemo(
-    () => (viewMode === "date" ? dateFilteredTasks : allTasks),
-    [viewMode, dateFilteredTasks, allTasks]
-  );
+  const filteredTasks = useMemo(() => {
+    if (!isClientLoaded) return [];
+    if (viewMode === "date") {
+      return [...dateFilteredTasks];
+    } else {
+      return [...allTasks];
+    }
+  }, [viewMode, dateFilteredTasks, allTasks, isClientLoaded, viewModeKey]);
 
-  const sortedTasks = useMemo(
-    () => (isClientLoaded ? sortTasks(filteredTasks, sortBy) : []),
-    [filteredTasks, sortBy, isClientLoaded]
-  );
+  const sortedTasks = useMemo(() => {
+    if (!isClientLoaded) return [];
+    return sortTasks([...filteredTasks], sortBy);
+  }, [filteredTasks, sortBy, isClientLoaded]);
 
   const taskCounts = useMemo(() => {
     if (!isClientLoaded) return { completed: 0, remaining: 0, progress: 0 };
 
-    const tasks = viewMode === "date" ? dateFilteredTasks : allTasks;
+    const tasks = viewMode === "date" ? [...dateFilteredTasks] : [...allTasks];
     const completed = tasks.filter((task) => task.completed).length;
     const remaining = tasks.filter((task) => !task.completed).length;
     const progress =
       tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
 
     return { completed, remaining, progress };
-  }, [dateFilteredTasks, allTasks, viewMode, isClientLoaded]);
+  }, [dateFilteredTasks, allTasks, viewMode, isClientLoaded, viewModeKey]);
 
   const toggleTask = useCallback(
     (id: string) => {
@@ -196,36 +221,56 @@ export default function Task({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editingTaskId, cancelEditing]);
 
-  const handleViewModeChange = useCallback((mode: "date" | "all") => {
-    setViewMode(mode);
-  }, []);
+  const handleViewModeChange = useCallback(
+    (mode: "date" | "all") => {
+      if (mode === "date" && viewMode !== "date") {
+        dispatch({ type: "SET_DATE_MODE" });
+      } else if (mode === "all" && viewMode !== "all") {
+        dispatch({ type: "SET_ALL_MODE" });
+      }
+    },
+    [viewMode]
+  );
 
   return (
-    <div className="w-full flex flex-col h-full bg-neutral-900">
+    <div
+      className="w-full flex flex-col h-full bg-neutral-900"
+      key={viewModeKey}
+    >
       <div className="flex items-center justify-between sticky bg-neutral-900 top-0 z-30 px-4 py-2 border-b border-neutral-800/40">
         <div className="flex items-center gap-2">
           <div className="flex h-9 overflow-hidden border-input rounded-md border bg-neutral-900 dark:bg-neutral-900/80">
             <button
-              onClick={() => handleViewModeChange("date")}
-              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-all ${
+              type="button"
+              onClick={() => {
+                if (viewMode !== "date") {
+                  handleViewModeChange("date");
+                }
+              }}
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors ${
                 viewMode === "date"
                   ? "text-muted-foreground hover:text-foreground/80"
                   : "bg-neutral-800 text-foreground"
               }`}
               aria-label="Switch to date view"
-              disabled={viewMode === "date"}
+              aria-pressed={viewMode === "date"}
             >
               <CalendarIcon size={14} />
             </button>
             <button
-              onClick={() => handleViewModeChange("all")}
-              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-all ${
+              type="button"
+              onClick={() => {
+                if (viewMode !== "all") {
+                  handleViewModeChange("all");
+                }
+              }}
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors ${
                 viewMode === "all"
                   ? "text-muted-foreground hover:text-foreground/80"
                   : "bg-neutral-800 text-foreground"
               }`}
               aria-label="Switch to all tasks view"
-              disabled={viewMode === "all"}
+              aria-pressed={viewMode === "all"}
             >
               <ViewIcon size={14} />
             </button>
@@ -307,8 +352,7 @@ export default function Task({
         )}
       </div>
 
-      <div className="pt-2 bg-neutral-900 relative z-10"></div>
-
+      <div className="pt-2 bg-neutral-900/90 relative z-10"></div>
       <div
         className="flex-1 overflow-y-auto mt-0 relative z-0"
         aria-live="polite"
