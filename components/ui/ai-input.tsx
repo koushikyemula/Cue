@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CornerRightUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AIHelpDialog } from "@/components/ai-help-dialog";
 
 interface AIInput {
   id?: string;
@@ -32,6 +33,7 @@ export function AIInput({
   const [inputValue, setInputValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
 
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight,
@@ -47,6 +49,13 @@ export function AIInput({
   }, [textareaRef]);
 
   const handleSubmit = () => {
+    if (inputValue.trim() === "?help") {
+      setShowHelpDialog(true);
+      setInputValue("");
+      adjustHeight(true);
+      return;
+    }
+
     if (inputValue.trim() && !submitted) {
       setSubmitted(true);
       onSubmit?.(inputValue);
@@ -89,88 +98,97 @@ export function AIInput({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={cn("w-full py-4 px-4 sm:px-0 pointer-events-auto", className)}
-    >
-      <div className="relative max-w-lg w-full mx-auto">
-        <motion.div
-          className={cn(
-            "relative border transition-all duration-200 ease-in-out",
-            "border-black/10 dark:border-white/10",
-            isFocused
-              ? "border-black/30 dark:border-white/30 shadow-sm"
-              : "border-black/10 dark:border-white/10",
-            " bg-black/[0.03] dark:bg-neutral-900"
-          )}
-          whileTap={{ scale: 0.995 }}
-        >
-          <div className="flex flex-col">
-            <div
-              className="overflow-y-auto px-4 cursor-text"
-              style={{ maxHeight: `${maxHeight - 48}px` }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (textareaRef.current && !submitted) {
-                  textareaRef.current.focus();
-                }
-              }}
-            >
-              <Textarea
-                ref={textareaRef}
-                id={id}
-                placeholder={placeholder}
-                className={cn(
-                  "max-w-xl w-full pr-10 py-4 placeholder:text-black/50 dark:placeholder:text-neutral-400",
-                  "border-none focus:ring-0 text-black dark:text-white resize-none text-wrap",
-                  "focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.2]",
-                  `min-h-[${minHeight}px] transition-all duration-200`
-                )}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                disabled={submitted}
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              />
-            </div>
-          </div>
-          <motion.button
-            onClick={handleSubmit}
+    <>
+      <AIHelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className={cn(
+          "w-full py-4 px-4 sm:px-0 pointer-events-auto",
+          className
+        )}
+      >
+        <div className="relative max-w-lg w-full mx-auto">
+          <motion.div
             className={cn(
-              "absolute right-3 top-1/2 -translate-y-1/2   py-1 px-1",
-              submitted ? "bg-none" : "bg-black/5 dark:bg-neutral-800"
+              "relative border transition-all duration-200 ease-in-out",
+              "border-black/10 dark:border-white/10",
+              isFocused
+                ? "border-black/30 dark:border-white/30 shadow-sm"
+                : "border-black/10 dark:border-white/10",
+              " bg-black/[0.03] dark:bg-neutral-900"
             )}
-            type="button"
-            disabled={submitted || !inputValue.trim()}
+            whileTap={{ scale: 0.995 }}
           >
-            {submitted ? (
+            <div className="flex flex-col">
               <div
-                className="w-4 h-4 bg-black dark:bg-white   animate-spin transition duration-700"
-                style={{ animationDuration: "3s" }}
-              />
-            ) : (
-              <CornerRightUp
-                className={cn(
-                  "w-4 h-4 transition-opacity dark:text-white",
-                  inputValue ? "opacity-100" : "opacity-30"
-                )}
-              />
-            )}
-          </motion.button>
-        </motion.div>
-        <p className="h-4 text-xs mt-2 text-center text-black/70 dark:text-neutral-500">
-          Try: "sort by newest", "clear completed", or "add meeting tomorrow at
-          3pm"
-        </p>
-      </div>
-    </motion.div>
+                className="overflow-y-auto px-4 cursor-text"
+                style={{ maxHeight: `${maxHeight - 48}px` }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (textareaRef.current && !submitted) {
+                    textareaRef.current.focus();
+                  }
+                }}
+              >
+                <Textarea
+                  ref={textareaRef}
+                  id={id}
+                  placeholder={placeholder}
+                  className={cn(
+                    "max-w-xl w-full pr-10 py-4 placeholder:text-black/50 dark:placeholder:text-neutral-400",
+                    "border-none focus:ring-0 text-black dark:text-white resize-none text-wrap",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.2]",
+                    `min-h-[${minHeight}px] transition-all duration-200`
+                  )}
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  disabled={submitted}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                />
+              </div>
+            </div>
+            <motion.button
+              onClick={handleSubmit}
+              className={cn(
+                "absolute right-3 top-1/2 -translate-y-1/2   py-1 px-1",
+                submitted ? "bg-none" : "bg-black/5 dark:bg-neutral-800"
+              )}
+              type="button"
+              disabled={submitted || !inputValue.trim()}
+            >
+              {submitted ? (
+                <div
+                  className="w-4 h-4 bg-black dark:bg-white   animate-spin transition duration-700"
+                  style={{ animationDuration: "3s" }}
+                />
+              ) : (
+                <CornerRightUp
+                  className={cn(
+                    "w-4 h-4 transition-opacity dark:text-white",
+                    inputValue ? "opacity-100" : "opacity-30"
+                  )}
+                />
+              )}
+            </motion.button>
+          </motion.div>
+          <p className="h-4 text-xs mt-2 text-center text-black/70 dark:text-neutral-500">
+            Type{" "}
+            <span className="font-mono bg-neutral-800/70 px-1 py-0.5 rounded text-neutral-400">
+              ?help
+            </span>{" "}
+            for instructions
+          </p>
+        </div>
+      </motion.div>
+    </>
   );
 }

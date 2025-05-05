@@ -18,7 +18,7 @@ import { AIInput } from "./ui/ai-input";
 import { ViewIcon, CalendarIcon } from "lucide-react";
 
 const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
-  <div className="flex flex-col items-center justify-center text-center min-h-[50vh] p-8 space-y-2">
+  <div className="flex flex-col items-center justify-center text-center min-h-[60dvh] p-8 space-y-2">
     {!isMobile && (
       <p className="text-sm text-muted-foreground max-w-[280px]">
         Press <kbd className="bg-muted px-1 rounded">⌘K</kbd> to add a new task
