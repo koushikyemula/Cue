@@ -3,7 +3,6 @@
 import { determineAction } from "@/app/actions";
 import { SettingsPopover, UserSettings } from "@/components/settings-popover";
 import Task from "@/components/task";
-import { AIInput } from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
 import { FileInput } from "@/components/ui/file-input";
 import {
@@ -26,6 +25,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import AiInput from "@/components/ui/ai-input";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -394,7 +394,7 @@ function HomePage() {
             transition={{ duration: 0.25, ease: "easeInOut" }}
           >
             <div className="max-w-md mx-auto pb-6">
-              <AIInput
+              <AiInput
                 placeholder="Enter your task here..."
                 minHeight={50}
                 onClose={handleClose}

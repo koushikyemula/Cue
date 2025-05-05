@@ -14,8 +14,9 @@ import { TaskList } from "./task-list";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { AIInput } from "./ui/ai-input";
 import { ViewIcon, CalendarIcon } from "lucide-react";
+import { addDays } from "date-fns";
+import AiInput from "./ui/ai-input";
 
 const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
   <div className="flex flex-col items-center justify-center text-center min-h-[60dvh] p-8 space-y-2">
@@ -209,17 +210,6 @@ export default function Task({
     }
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && editingTaskId) {
-        cancelEditing();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editingTaskId, cancelEditing]);
-
   const handleViewModeChange = useCallback(
     (mode: "date" | "all") => {
       if (mode === "date" && viewMode !== "date") {
@@ -230,6 +220,57 @@ export default function Task({
     },
     [viewMode]
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editingTaskId) {
+        cancelEditing();
+      }
+
+      if (e.key === "Tab" && e.shiftKey) {
+        e.preventDefault();
+        if (viewMode === "date") {
+          handleViewModeChange("all");
+        } else {
+          handleViewModeChange("date");
+        }
+      }
+
+      if (e.altKey) {
+        if (e.key === "[" || e.code === "BracketLeft") {
+          e.preventDefault();
+          if (viewMode === "date") {
+            setSelectedDate((prev) => {
+              const newDate = addDays(prev, -1);
+              return newDate;
+            });
+          }
+        }
+
+        if (e.key === "]" || e.code === "BracketRight") {
+          e.preventDefault();
+          if (viewMode === "date") {
+            setSelectedDate((prev) => {
+              const newDate = addDays(prev, 1);
+              return newDate;
+            });
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    viewMode,
+    setSelectedDate,
+    editingTaskId,
+    cancelEditing,
+    handleViewModeChange,
+  ]);
 
   return (
     <div
@@ -379,7 +420,7 @@ export default function Task({
       </div>
       {isMobile && !isInputVisible && (
         <div className="mt-4">
-          <AIInput
+          <AiInput
             placeholder="Enter your task here..."
             minHeight={50}
             onClose={onInputClose}
