@@ -8,7 +8,7 @@ import { DetermineActionFn } from "@/types/actions";
 export const determineAction: DetermineActionFn = async (
   text,
   tasks,
-  model = "llama-3.3",
+  model = "qwen-2.5",
   timezone = "UTC"
 ) => {
   function getDateInTimezone(timezone: string) {
@@ -46,132 +46,123 @@ export const determineAction: DetermineActionFn = async (
   const tomorrowStr = tomorrowDate.toISOString().split("T")[0];
 
   const prompt = `
-        Today's date is: ${todayStr} (Timezone: ${timezone})
-        The user has entered the following text: ${text}
-        
-        Determine the action or multiple actions to take based on the given context.
-        Return an array of actions.
+Today's date is: ${todayStr} (Timezone: ${timezone})
+The user has entered the following text: ${text}
 
-        Don't make assumptions about the user's intent, the task list is very important to understand the user's intent.
-        Go through the task list and make sure to understand the user's intent based on the task list.
-        All the text should be in lowercase!!
-        Never add existing tasks to the list, only add new tasks, but perform actions on existing tasks.
-        Be very mindful of the user's intent, they may want to add a task, but they may also want to delete a task, mark a task as complete, or edit a task.
-        Take some humor into account, the user may be joking around or being sarcastic.
+# TASK PROCESSING INSTRUCTIONS
 
-        The user can specify dates in their commands like:
-        - "add get coffee today" -> targetDate: ${todayStr}
-        - "add gym workout tomorrow" -> targetDate: ${tomorrowStr}
-        - "add team sync next wednesday"
-        - "add doctor checkup on thursday"
-        - "add project planning for next month"
-        - "add report submission due in 2 days"
-        
-        Extract the date from these commands and set it accordingly. If no date is specified, use the currently selected date.
-        Parse relative dates like "today", "tomorrow", "next week", "in 3 days", etc.
-        For specific days like "monday", "tuesday", etc., use the next occurrence of that day.
-        Always return dates in YYYY-MM-DD format.
+## CORE PRINCIPLES:
+1. ALWAYS check the task list first to understand context
+2. Process multiple actions in a single request when needed
+3. NEVER add duplicates of existing tasks
+4. Maintain task text in natural language format
+5. Process ALL requested changes in a single response
 
-        The user can specify time in their commands in various natural ways:
-        Examples with time:
-        - "team sync at 2pm tomorrow" -> text: "team sync", time: "14:00", targetDate: ${tomorrowStr}
-        - "doctor checkup at 11:30" -> text: "doctor checkup", time: "11:30", targetDate: ${todayStr}
-        - "call dad at 8am" -> text: "call dad", time: "08:00"
-        - "lunch with Sarah at 1:15pm" -> text: "lunch with Sarah", time: "13:15"
-        - "morning standup at 9" -> text: "morning standup", time: "09:00"
-        - "yoga class 6am tomorrow" -> text: "yoga class", time: "06:00", targetDate: ${tomorrowStr}
-        - "dinner plans at 7:30pm saturday" -> text: "dinner plans", time: "19:30"
-        - "tea break 4:30" -> text: "tea break", time: "16:30"
-        
-        Extract time in 24-hour format (HH:mm). Support various time formats:
-        - "2pm" -> "14:00"
-        - "2:30pm" -> "14:30"
-        - "14:00" -> "14:00"
-        - "8" -> "08:00"
-        - "8:15am" -> "08:15"
-        - "12" -> "12:00"
-        - "12:30pm" -> "12:30"
-        
-        If no time is specified, omit the time field.
-        Always extract the actual task text separately from the time and date information.
-
-        Priority can be specified in commands:
-        - "urgent team sync tomorrow" -> text: "team sync", priority: "high"
-        - "get coffee (low priority)" -> text: "get coffee", priority: "low"
-        - "important: submit report" -> text: "submit report", priority: "high"
-        - "medium priority: schedule meeting" -> text: "schedule meeting", priority: "medium"
-        
-        Priority should be one of: high, medium, low
-        If no priority is specified, omit the priority field.
-        Extract priority from various phrasings: "high priority", "low priority", "urgent", "important", etc.
+## CRITICAL RULES:
+- When the user references an existing task AND mentions time/priority/date, this is ALWAYS an edit request
+- Each action MUST include the complete set of fields being modified (time, priority, etc.)
+- For edit actions, use taskId to identify tasks (NEVER use text to identify tasks)
+- When the user wants to change time for a task, update BOTH the scheduled_time field AND the targetDate field when applicable
+- DO NOT modify the original task text during edits unless explicitly requested
 
 ${
   tasks
-    ? `<task_list>
-${tasks?.map((task) => `- ${task.id}: ${task.text}`).join("\n")}
-</task_list>`
-    : ""
+    ? `## CURRENT TASK LIST:
+${tasks
+  ?.map(
+    (task) =>
+      `- ${task.id}: ${task.text}${
+        task.scheduled_time ? ` (Time: ${task.scheduled_time})` : ""
+      }${task.priority ? ` (Priority: ${task.priority})` : ""}`
+  )
+  .join("\n")}
+`
+    : "## CURRENT TASK LIST: Empty"
 }
 
-        The action should be one of the following: ${[
-          "add",
-          "delete",
-          "mark",
-          "sort",
-          "edit",
-          "clear",
-          "export",
-        ].join(", ")}
-        - If the action is "add", the text and targetDate should be included.
-        - If the action is "delete", the taskId should be included.
-        - If the action is "mark", the taskId should be included and the status should be "complete" or "incomplete".
-        - If the action is "sort", the sortBy should be included.
-        - If the action is "edit", both the taskId (to identify the task to edit) and the text (the new content) should be included.
-        - If the action is "clear", the user wants to clear the list of tasks with the given listToClear(all, completed, incomplete).
-        - If the action is "export", the user wants to export their tasks to a JSON file to save or share.
-        
-        For the add action, the text should be in the future tense. like "buy groceries", "make a post with @theo", "go for violin lesson"
-        For the add action, priority can be specified and should be included when present.
-        
-        For the sort action, the sortBy can now include "priority" to sort items by their priority level.
-     
-        Some queries will be ambiguous stating the tense of the text, which will allow you to infer the correct action to take on the task list. 
-        The add requests will mostly likey to be in the future tense, while the complete requests will be in the past tense.
-        The task list is very important to understand the user's intent.
-        
-        IMPORTANT: You must always use the task's ID for the actions delete, mark, and edit. Do not use the text to identify tasks.
-        Example: "task id: '123abc', task text: 'get coffee', user request: 'got coffee', action: 'mark', taskId: '123abc', status: 'complete'"
-        Example: "task id: '456def', task text: 'team sync with @alex', user request: 'i had the team sync', action: 'mark', taskId: '456def', status: 'complete'"
-        Example: "request: 'get coffee today', action: 'add', text: 'get coffee', targetDate: '${todayStr}'"
-        Example: "request: 'gym workout tomorrow', action: 'add', text: 'gym workout', targetDate: '${tomorrowStr}'"
-        Example: "request: 'urgent team sync tomorrow', action: 'add', text: 'team sync', targetDate: '${tomorrowStr}', priority: 'high'"
-        Example: "request: 'critical: submit project report', action: 'add', text: 'submit project report', priority: 'high'"
+## SUPPORTED ACTIONS:
+1. add: Create a new task
+2. delete: Remove an existing task
+3. mark: Set task status as complete/incomplete
+4. sort: Reorder tasks by specified criteria
+5. edit: Modify task details (text, time, date, priority)
+6. clear: Remove all tasks or a subset
+7. export: Export tasks to file
 
-        The edit request will mostly be ambiguous, so make the edit as close to the original as possible to maintain the user's context with the task to edit.
-        Some word could be incomplete, like "sync" instead of "synchronization", make sure to edit the task based on the task list since the task already exists just needs a rewrite.
-        You can also edit just the priority of a task without changing the text.
+## TIME PROCESSING:
+- Always convert scheduled_time to 24-hour format (HH:mm)
+- "2pm" → "14:00"
+- "2:30pm" → "14:30"
+- "8am" → "08:00"
+- "9" → "09:00"
+- "12" → "12:00"
 
-        Example edit requests:
-        "task id: '789ghi', original text: 'team sync w/ John', user request: 'i meant sync with Sarah', action: 'edit', taskId: '789ghi', text: 'team sync w/ Sarah'"
-        "task id: '012jkl', original text: 'get coffee', user request: 'i meant get tea', action: 'edit', taskId: '012jkl', text: 'get tea'"
-        "task id: '345mno', original text: 'go for yoga class', user request: 'i meant go for a run', action: 'edit', taskId: '345mno', text: 'go for a run'"
-        "task id: '678pqr', original text: 'prepare slides', user request: 'make that high priority', action: 'edit', taskId: '678pqr', priority: 'high'"
+## DATE PROCESSING:
+- "today" → "${todayStr}"
+- "tomorrow" → "${tomorrowStr}"
+- Day names (Monday, Tuesday) → next occurrence
+- "next week" → date of next week
+- "in X days" → calculated date
 
-        Example clear requests:
-        "user request: 'clear all tasks', action: 'clear', listToClear: 'all'"
-        "user request: 'clear my completed tasks', action: 'clear', listToClear: 'completed'"
-        "user request: 'remove all incomplete items', action: 'clear', listToClear: 'incomplete'"
-        "user request: 'start fresh', action: 'clear', listToClear: 'all'"
-        "user request: 'delete finished tasks', action: 'clear', listToClear: 'completed'"
-        "user request: 'clean up my list', action: 'clear', listToClear: 'all'"
-        
-        Example export requests:
-        "user request: 'export my tasks', action: 'export'"
-        "user request: 'download my tasks', action: 'export'"
-        "user request: 'save my data', action: 'export'"
-        "user request: 'backup my tasks', action: 'export'"
-        "user request: 'export data', action: 'export'"
-    `;
+## PRIORITY LEVELS:
+- high: urgent, important, critical, top, asap
+- medium: normal, moderate
+- low: minor, minimal, lowest
+
+## COMMAND PATTERNS:
+- ADD: "add [task text] [at scheduled_time] [on date] [priority]"
+- EDIT: "[task reference] [is at scheduled_time] [is on date] [priority]"
+- MARK: "[task reference] [is done/completed/finished]"
+- DELETE: "[delete/remove] [task reference]"
+- SORT: "[sort/order] by [criteria]"
+- CLEAR: "[clear/remove] [all/completed/incomplete] tasks"
+- EXPORT: "[export/download/save] tasks"
+
+## RESPONSE FORMAT:
+Return an array of action objects. Each action must have the complete set of fields needed:
+- For add: action, text, targetDate (when specified), scheduled_time (when specified), priority (when specified)
+- For edit: action, taskId, plus ANY fields being modified (text, scheduled_time, targetDate, priority)
+- For mark: action, taskId, status
+- For delete: action, taskId
+- For sort: action, sortBy
+- For clear: action, listToClear
+- For export: action
+
+## EXAMPLES:
+
+### ADD TASKS:
+- "add get coffee today" → {action: "add", text: "get coffee", targetDate: "${todayStr}"}
+- "add team meeting tomorrow at 3pm" → {action: "add", text: "team meeting", targetDate: "${tomorrowStr}", scheduled_time: "15:00"}
+- "add high priority dentist appointment next friday at 10am" → {action: "add", text: "dentist appointment", targetDate: "[next friday date]", scheduled_time: "10:00", priority: "high"}
+
+### EDIT TASKS:
+- For task with id "123abc" and text "bbq at ross's house":
+  "ross's bbq is at 9pm and high priority" → {action: "edit", taskId: "123abc", scheduled_time: "21:00", priority: "high"}
+
+- For task with id "456def" and text "team meeting":
+  "meeting is tomorrow at 2pm" → {action: "edit", taskId: "456def", targetDate: "${tomorrowStr}", scheduled_time: "14:00"}
+
+- For task with id "789ghi" and text "get coffee":
+  "i meant get tea" → {action: "edit", taskId: "789ghi", text: "get tea"}
+
+### MARK TASKS:
+- For task with id "123abc" and text "call mom":
+  "i called mom" → {action: "mark", taskId: "123abc", status: "complete"}
+
+- For task with id "456def" and text "dentist appointment":
+  "unmark dentist" → {action: "mark", taskId: "456def", status: "incomplete"}
+
+### MULTIPLE ACTIONS:
+- "add buy groceries today and mark dentist as complete" 
+  → [{action: "add", text: "buy groceries", targetDate: "${todayStr}"}, 
+     {action: "mark", taskId: "[dentist task id]", status: "complete"}]
+
+## IMPORTANT REMINDERS:
+- For EDIT actions, include ALL fields being modified in a single action
+- NEVER create a new task when modifying an existing one
+- Always use taskId for edit/mark/delete actions
+- Return all requested changes in one response
+`;
 
   const { object: action, usage } = await generateObject({
     model: llm.languageModel(model),
@@ -197,7 +188,7 @@ ${tasks?.map((task) => `- ${task.id}: ${task.text}`).join("\n")}
             .string()
             .describe("The target date for the task item in YYYY-MM-DD format")
             .optional(),
-          time: z
+          scheduled_time: z
             .string()
             .describe("The time for the task item in HH:mm format (24-hour)")
             .optional(),

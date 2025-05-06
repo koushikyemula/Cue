@@ -153,6 +153,8 @@ function HomePage() {
                     date: action.targetDate
                       ? new Date(action.targetDate)
                       : task.date,
+                    scheduled_time:
+                      action.scheduled_time || task.scheduled_time,
                   };
 
                   // Only update priority if explicitly provided in the action
@@ -226,46 +228,13 @@ function HomePage() {
         const newTasks = processActions(actions, text, selectedDate);
         setTasks(newTasks);
 
-        // Add toast notifications based on actions performed
         if (actions.length > 0) {
           actions.forEach((action) => {
-            switch (action.action) {
-              case "add":
-                toast.success("Task created", {
-                  description: action.text || text,
-                  duration: 2000,
-                });
-                break;
-              case "delete":
-                toast.success("Task deleted", {
-                  duration: 2000,
-                });
-                break;
-              case "mark":
-                toast.success(
-                  `Task marked ${
-                    action.status === "complete" ? "complete" : "incomplete"
-                  }`,
-                  {
-                    duration: 2000,
-                  }
-                );
-                break;
-              case "edit":
-                toast.success("Task updated", {
-                  duration: 2000,
-                });
-                break;
-              case "clear":
-                toast.success(`Cleared ${action.listToClear} tasks`, {
-                  duration: 2000,
-                });
-                break;
-              case "sort":
-                toast.success(`Sorted by ${action.sortBy}`, {
-                  duration: 2000,
-                });
-                break;
+            if (action.action === "add") {
+              toast.success("Task created", {
+                description: action.text || text,
+                duration: 2000,
+              });
             }
           });
         }

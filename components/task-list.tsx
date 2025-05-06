@@ -1,13 +1,6 @@
-import { formatDate } from "@/lib/utils/task";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { X, Pencil, Check, Clock, ExternalLink } from "lucide-react";
 import { CircleCheckbox } from "@/components/ui/circle-checkbox";
-import { TaskItem } from "@/types";
-import { useRef, useCallback, useState, useEffect, memo } from "react";
-import { TimePicker, formatTimeDisplay } from "@/components/ui/time-picker";
-import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
+import { TimePicker, formatTimeDisplay } from "@/components/ui/time-picker";
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils/task";
+import { TaskItem } from "@/types";
+import { AnimatePresence, motion } from "framer-motion";
+import { Clock, ExternalLink, Pencil, X } from "lucide-react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 const PriorityIndicator = memo(
   ({ priority }: { priority?: "high" | "medium" | "low" }) => {
@@ -298,6 +297,19 @@ export function TaskList({
     }
   }, [editingTaskId, tasks]);
 
+  const isDateBeforeToday = useCallback((dateInput?: string | Date) => {
+    if (!dateInput) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const taskDate =
+      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+    taskDate.setHours(0, 0, 0, 0);
+
+    return taskDate < today;
+  }, []);
+
   const animationVariants = {
     initial: { opacity: 1 },
     animate: { opacity: 1 },
@@ -313,132 +325,150 @@ export function TaskList({
   return (
     <div className="space-y-px">
       <AnimatePresence initial={false}>
-        {tasks.map((task) => (
-          <motion.div
-            key={task.id}
-            initial={animationVariants.initial}
-            animate={animationVariants.animate}
-            exit={animationVariants.exit}
-            transition={animationTransition}
-            layout="position"
-            className={cn(
-              "group flex items-center py-2.5 px-4 gap-3.5",
-              task.completed && editingTaskId !== task.id
-                ? "text-muted-foreground/50"
-                : "hover:bg-muted/40",
-              editingTaskId === task.id && "bg-muted/60",
-              "transition-colors"
-            )}
-          >
-            {editingTaskId === task.id ? (
-              <TaskEditForm
-                task={task}
-                editText={editText}
-                setEditText={setEditText}
-                editTime={editTime}
-                setEditTime={setEditTime}
-                editPriority={editPriority}
-                setEditPriority={setEditPriority}
-                handleEditTask={handleEditTask}
-                cancelEditing={cancelEditing}
-              />
-            ) : (
-              <>
-                <motion.div
-                  layout="position"
-                  className={cn(editingTaskId === task.id && "self-start")}
-                >
-                  <CircleCheckbox
-                    checked={task.completed}
-                    onCheckedChange={() => onToggle(task.id)}
-                    className={cn(
-                      "hover:cursor-pointer",
-                      task.completed
-                        ? "border-muted-foreground/50 bg-muted-foreground/20"
-                        : "hover:border-primary/50"
-                    )}
-                  />
-                </motion.div>
-                <motion.div
-                  layout="position"
-                  className="flex-1 flex flex-col min-w-0 cursor-pointer"
-                  onClick={() => onToggle(task.id)}
-                >
-                  <motion.div
-                    layout="position"
-                    className="flex items-center gap-1.5"
-                  >
-                    <motion.span
-                      layout="position"
-                      className={cn(
-                        "text-[15px] transition-colors duration-100 break-words whitespace-pre-line",
-                        task.completed &&
-                          "line-through text-muted-foreground/50"
-                      )}
-                    >
-                      <TextWithLinks
-                        text={task.text}
-                        isCompleted={task.completed}
-                      />
-                    </motion.span>
-                  </motion.div>
-                  <motion.div
-                    layout="position"
-                    className="flex items-center gap-2 mt-1"
-                  >
-                    {viewMode === "all" && task.date && (
-                      <span className="text-xs text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded">
-                        {formatDate(new Date(task.date))}
-                      </span>
-                    )}
-                    <TimeDisplay time={task.scheduled_time} />
-                    {task.priority && (
-                      <PriorityIndicator priority={task.priority} />
-                    )}
-                  </motion.div>
-                </motion.div>
+        {tasks.map((task) => {
+          const isPending =
+            viewMode === "all" &&
+            !task.completed &&
+            task.date &&
+            isDateBeforeToday(task.date);
 
-                <motion.div
-                  layout="position"
-                  className="flex items-center gap-1 ml-auto"
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-7 w-7 text-muted-foreground cursor-pointer hover:text-foreground  ",
-                      isMobile
-                        ? "opacity-80"
-                        : "opacity-0 group-hover:opacity-80 transition-opacity"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(task.id, task.text);
-                    }}
+          return (
+            <motion.div
+              key={task.id}
+              initial={animationVariants.initial}
+              animate={animationVariants.animate}
+              exit={animationVariants.exit}
+              transition={animationTransition}
+              layout="position"
+              className={cn(
+                "group flex items-center py-2.5 px-4 gap-3.5",
+                task.completed && editingTaskId !== task.id
+                  ? "text-muted-foreground/50"
+                  : "hover:bg-muted/40",
+                editingTaskId === task.id && "bg-muted/60",
+                isPending &&
+                  "border-l-2 border-l-yellow-500/70 bg-yellow-500/5",
+                "transition-colors"
+              )}
+            >
+              {editingTaskId === task.id ? (
+                <TaskEditForm
+                  task={task}
+                  editText={editText}
+                  setEditText={setEditText}
+                  editTime={editTime}
+                  setEditTime={setEditTime}
+                  editPriority={editPriority}
+                  setEditPriority={setEditPriority}
+                  handleEditTask={handleEditTask}
+                  cancelEditing={cancelEditing}
+                />
+              ) : (
+                <>
+                  <motion.div
+                    layout="position"
+                    className={cn(editingTaskId === task.id && "self-start")}
                   >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-7 w-7 text-muted-foreground cursor-pointer hover:text-destructive  ",
-                      isMobile
-                        ? "opacity-80"
-                        : "opacity-0 group-hover:opacity-80 transition-opacity"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(task.id);
-                    }}
+                    <CircleCheckbox
+                      checked={task.completed}
+                      onCheckedChange={() => onToggle(task.id)}
+                      className={cn(
+                        "hover:cursor-pointer",
+                        task.completed
+                          ? "border-muted-foreground/50 bg-muted-foreground/20"
+                          : isPending
+                          ? "border-yellow-500/50 hover:border-yellow-500"
+                          : "hover:border-primary/50"
+                      )}
+                    />
+                  </motion.div>
+                  <motion.div
+                    layout="position"
+                    className="flex-1 flex flex-col min-w-0 cursor-pointer"
+                    onClick={() => onToggle(task.id)}
                   >
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
-                </motion.div>
-              </>
-            )}
-          </motion.div>
-        ))}
+                    <motion.div
+                      layout="position"
+                      className="flex items-center gap-1.5"
+                    >
+                      <motion.span
+                        layout="position"
+                        className={cn(
+                          "text-[15px] transition-colors duration-100 break-words whitespace-pre-line",
+                          task.completed &&
+                            "line-through text-muted-foreground/50"
+                        )}
+                      >
+                        <TextWithLinks
+                          text={task.text}
+                          isCompleted={task.completed}
+                        />
+                      </motion.span>
+                    </motion.div>
+                    <motion.div
+                      layout="position"
+                      className="flex flex-wrap items-center gap-2 mt-1.5"
+                    >
+                      {viewMode === "all" && task.date && (
+                        <span className="text-xs text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded-sm border border-muted/20">
+                          {formatDate(new Date(task.date))}
+                        </span>
+                      )}
+                      <TimeDisplay time={task.scheduled_time} />
+                      {task.priority && (
+                        <PriorityIndicator priority={task.priority} />
+                      )}
+                      {isPending && (
+                        <span className="text-xs bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded-sm border border-yellow-500/30 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>pending</span>
+                        </span>
+                      )}
+                    </motion.div>
+                  </motion.div>
+
+                  <motion.div
+                    layout="position"
+                    className="flex items-center gap-1 ml-auto"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 text-muted-foreground cursor-pointer hover:text-foreground  ",
+                        isMobile
+                          ? "opacity-80"
+                          : "opacity-0 group-hover:opacity-80 transition-opacity"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(task.id, task.text);
+                      }}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 text-muted-foreground cursor-pointer hover:text-destructive  ",
+                        isMobile
+                          ? "opacity-80"
+                          : "opacity-0 group-hover:opacity-80 transition-opacity"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(task.id);
+                      }}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </motion.div>
+                </>
+              )}
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
     </div>
   );
