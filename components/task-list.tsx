@@ -233,14 +233,14 @@ const TextWithLinks = memo(
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "text-primary hover:underline inline-flex items-center gap-0.5 transition-colors",
+                "text-primary hover:underline inline-flex items-center gap-0.5 transition-colors max-w-[200px]",
                 isCompleted
                   ? "text-muted-foreground/60 hover:text-muted-foreground/80"
                   : "hover:text-primary/80"
               )}
             >
-              {url}
-              <ExternalLink className="w-3 h-3 inline ml-0.5" />
+              <span className="truncate">{url}</span>
+              <ExternalLink className="w-3 h-3 flex-shrink-0 ml-0.5" />
             </a>
           );
         })}
