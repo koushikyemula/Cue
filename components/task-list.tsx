@@ -2,7 +2,7 @@ import { formatDate } from "@/lib/utils/task";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Pencil, Check, Clock } from "lucide-react";
+import { X, Pencil, Check, Clock, ExternalLink } from "lucide-react";
 import { CircleCheckbox } from "@/components/ui/circle-checkbox";
 import { TaskItem } from "@/types";
 import { useRef, useCallback, useState, useEffect, memo } from "react";
@@ -207,6 +207,49 @@ const TaskEditForm = memo(
 );
 TaskEditForm.displayName = "TaskEditForm";
 
+const TextWithLinks = memo(
+  ({ text, isCompleted }: { text: string; isCompleted: boolean }) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+    if (!text.match(urlRegex)) {
+      return <>{text}</>;
+    }
+
+    const parts = text.split(urlRegex);
+    const matches = text.match(urlRegex) || [];
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (i % 2 === 0) {
+            return part;
+          }
+          const url = matches[(i - 1) / 2];
+          return (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "text-primary hover:underline inline-flex items-center gap-0.5 transition-colors",
+                isCompleted
+                  ? "text-muted-foreground/60 hover:text-muted-foreground/80"
+                  : "hover:text-primary/80"
+              )}
+            >
+              {url}
+              <ExternalLink className="w-3 h-3 inline ml-0.5" />
+            </a>
+          );
+        })}
+      </>
+    );
+  }
+);
+TextWithLinks.displayName = "TextWithLinks";
+
 interface TaskListProps {
   tasks: TaskItem[];
   onToggle: (id: string) => void;
@@ -333,7 +376,10 @@ export function TaskList({
                           "line-through text-muted-foreground/50"
                       )}
                     >
-                      {task.text}
+                      <TextWithLinks
+                        text={task.text}
+                        isCompleted={task.completed}
+                      />
                     </motion.span>
                   </motion.div>
                   <motion.div

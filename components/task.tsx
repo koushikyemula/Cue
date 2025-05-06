@@ -27,9 +27,16 @@ const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
       </p>
     )}
     {isMobile && (
-      <p className="text-sm text-muted-foreground max-w-[280px]">
-        Use the input box below to add a new task
-      </p>
+      <>
+        <p className="text-sm text-muted-foreground max-w-[280px]">
+          Use the input box below to add a new task
+        </p>
+
+        <span className="text-xs text-muted-foreground opacity-70 mt-2 flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 border border-muted-foreground/30 rounded-full"></span>
+          Swipe to switch views
+        </span>
+      </>
     )}
   </div>
 );
@@ -61,6 +68,7 @@ interface TaskProps {
   isInputVisible?: boolean;
   onInputClose?: () => void;
   onInputSubmit?: (text: string) => void;
+  defaultViewMode?: "date" | "all";
 }
 
 export default function Task({
@@ -70,6 +78,7 @@ export default function Task({
   isInputVisible = false,
   onInputClose = () => {},
   onInputSubmit = () => {},
+  defaultViewMode = "date",
 }: TaskProps) {
   const [isClientLoaded, setIsClientLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -91,7 +100,7 @@ export default function Task({
           return state;
       }
     },
-    { mode: "date", key: 0 }
+    { mode: defaultViewMode, key: 0 }
   );
 
   const viewMode = viewState.mode;
@@ -102,6 +111,14 @@ export default function Task({
   useEffect(() => {
     setIsClientLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (defaultViewMode === "all") {
+      dispatch({ type: "SET_ALL_MODE" });
+    } else {
+      dispatch({ type: "SET_DATE_MODE" });
+    }
+  }, [defaultViewMode]);
 
   const dateFilteredTasks = useMemo(
     () => (isClientLoaded ? filterTasksByDate(initialTasks, selectedDate) : []),
@@ -484,6 +501,14 @@ export default function Task({
           </div>
         )}
       </div>
+      {isMobile && sortedTasks.length <= 3 && (
+        <div className="mb-6 flex z-0 items-center w-full justify-center">
+          <span className="text-xs text-muted-foreground/60 bg-muted/30 px-2.5 py-1 rounded-full border border-border/10 flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 bg-muted-foreground/40 rounded-full"></span>
+            Swipe to switch views
+          </span>
+        </div>
+      )}
       {isMobile && !isInputVisible && (
         <div className="mt-4">
           <AiInput

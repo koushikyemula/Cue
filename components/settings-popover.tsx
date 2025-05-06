@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -25,13 +25,15 @@ import { toast } from "sonner";
 export interface UserSettings {
   defaultAIInputOpen: boolean;
   autoRemoveCompleted: boolean;
+  defaultViewMode: "date" | "all";
   defaultPriority: "high" | "medium" | "low" | undefined;
   defaultSortBy: SortOption;
 }
 
-const defaultSettings: UserSettings = {
+export const defaultSettings: UserSettings = {
   defaultAIInputOpen: false,
   autoRemoveCompleted: false,
+  defaultViewMode: "date",
   defaultPriority: undefined,
   defaultSortBy: "newest",
 };
@@ -83,6 +85,11 @@ export function SettingsPopover({
     setIsOpen(open);
   }, []);
 
+  const isDefaultSettings = useMemo(
+    () => JSON.stringify(settings) === JSON.stringify(defaultSettings),
+    [settings]
+  );
+
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange} modal>
       <PopoverTrigger asChild>
@@ -102,7 +109,12 @@ export function SettingsPopover({
       </PopoverTrigger>
       <PopoverContent className="w-[300px]" align="end" sideOffset={8}>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div
+            className={cn(
+              "flex items-center justify-between",
+              isDefaultSettings && "py-1.5"
+            )}
+          >
             <h4 className="font-medium text-base leading-none">Settings</h4>
             <Button
               variant="ghost"
@@ -110,8 +122,8 @@ export function SettingsPopover({
               title="Reset to default settings"
               onClick={handleResetSettings}
               className={cn(
-                "h-7 w-7 hover:bg-accent/40 cursor-pointer border-0 text-muted-foreground hover:text-foreground transition-colors",
-                settings === defaultSettings ? "opacity-0" : "opacity-100"
+                "h-7 w-7 hover:bg-accent/40 cursor-pointer flex border-0 text-muted-foreground hover:text-foreground transition-colors",
+                isDefaultSettings && "hidden"
               )}
             >
               <ListRestart className="h-3.5 w-3.5" />
@@ -152,6 +164,40 @@ export function SettingsPopover({
                 handleSwitchChange(checked, "autoRemoveCompleted")
               }
             />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="default-view" className="text-xs">
+                Default View
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Preferred default view mode
+              </p>
+            </div>
+            <Select
+              value={settings.defaultViewMode}
+              onValueChange={(value) =>
+                handleSelectChange(value, "defaultViewMode")
+              }
+            >
+              <SelectTrigger className="max-w-[95px] w-full cursor-pointer h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem
+                  value="date"
+                  className="cursor-pointer hover:bg-accent/30"
+                >
+                  Date
+                </SelectItem>
+                <SelectItem
+                  value="all"
+                  className="cursor-pointer hover:bg-accent/30"
+                >
+                  All
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-1">

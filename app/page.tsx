@@ -1,7 +1,11 @@
 "use client";
 
 import { determineAction } from "@/app/actions";
-import { SettingsPopover, UserSettings } from "@/components/settings-popover";
+import {
+  defaultSettings,
+  SettingsPopover,
+  UserSettings,
+} from "@/components/settings-popover";
 import Task from "@/components/task";
 import { Button } from "@/components/ui/button";
 import { FileInput } from "@/components/ui/file-input";
@@ -37,12 +41,8 @@ function HomePage() {
   const inputRef = useRef<HTMLDivElement>(null);
   const [syncOpen, setSyncOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [userSettings, setUserSettings] = useState<UserSettings>({
-    defaultAIInputOpen: false,
-    autoRemoveCompleted: false,
-    defaultPriority: undefined,
-    defaultSortBy: "newest",
-  });
+  const [userSettings, setUserSettings] =
+    useState<UserSettings>(defaultSettings);
 
   useEffect(() => {
     if (userSettings.defaultAIInputOpen && !isMobile) {
@@ -381,6 +381,7 @@ function HomePage() {
           isInputVisible={isInputVisible}
           onInputClose={handleClose}
           onInputSubmit={handleSubmit}
+          defaultViewMode={userSettings.defaultViewMode}
         />
       </div>
       <AnimatePresence>
