@@ -399,6 +399,7 @@ function HomePage() {
                 minHeight={50}
                 onClose={handleClose}
                 onSubmit={handleSubmit}
+                isMobile={isMobile}
               />
             </div>
           </motion.div>

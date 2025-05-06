@@ -19,6 +19,7 @@ interface AIInputProps {
   onSubmit?: (text: string, action?: string) => void;
   onClose: () => void;
   className?: string;
+  isMobile?: boolean;
 }
 
 function AIInput({
@@ -30,6 +31,7 @@ function AIInput({
   onSubmit,
   onClose,
   className,
+  isMobile = false,
 }: AIInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -192,10 +194,15 @@ function AIInput({
 
   return (
     <>
-      <AIHelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
+      <AIHelpDialog
+        open={showHelpDialog}
+        onOpenChange={setShowHelpDialog}
+        isMobile={isMobile}
+      />
       <ShortcutsDialog
         open={showShortcutsDialog}
         onOpenChange={setShowShortcutsDialog}
+        isMobile={isMobile}
       />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
