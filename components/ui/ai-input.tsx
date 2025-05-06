@@ -9,6 +9,12 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { AIHelpDialog } from "@/components/ai-help-dialog";
 import { ShortcutsDialog } from "@/components/shortcuts-dialog";
 
+type Command = {
+  name: string;
+  description: string;
+  execute: () => void;
+};
+
 interface AIInputProps {
   id?: string;
   placeholder?: string;
@@ -44,6 +50,32 @@ function AIInput({
     maxHeight,
   });
 
+  const commands = useMemo<Record<string, Command>>(
+    () => ({
+      "?help": {
+        name: "?help",
+        description: "Shows help information",
+        execute: () => {
+          setShowHelpDialog(true);
+          setInputValue("");
+          adjustHeight(true);
+        },
+      },
+      "?shortcuts": {
+        name: "?shortcuts",
+        description: "Shows keyboard shortcuts",
+        execute: () => {
+          setShowShortcutsDialog(true);
+          setInputValue("");
+          adjustHeight(true);
+        },
+      },
+    }),
+    [adjustHeight]
+  );
+
+  const commandNames = useMemo(() => Object.keys(commands), [commands]);
+
   useEffect(() => {
     const textareaElement = textareaRef.current;
     if (textareaElement) {
@@ -74,23 +106,17 @@ function AIInput({
   }, [submitted]);
 
   const handleSubmit = useCallback(() => {
-    if (inputValue.trim() === "?help") {
-      setShowHelpDialog(true);
-      setInputValue("");
-      adjustHeight(true);
+    const trimmedInput = inputValue.trim();
+
+    const command = commands[trimmedInput];
+    if (command) {
+      command.execute();
       return;
     }
 
-    if (inputValue.trim() === "?shortcuts") {
-      setShowShortcutsDialog(true);
-      setInputValue("");
-      adjustHeight(true);
-      return;
-    }
-
-    if (inputValue.trim() && !submitted) {
+    if (trimmedInput && !submitted) {
       setSubmitted(true);
-      onSubmit?.(inputValue);
+      onSubmit?.(trimmedInput);
       setInputValue("");
       adjustHeight(true);
 
@@ -101,10 +127,37 @@ function AIInput({
         }
       }, loadingDuration);
     }
-  }, [inputValue, submitted, onSubmit, adjustHeight, loadingDuration]);
+  }, [
+    inputValue,
+    submitted,
+    onSubmit,
+    adjustHeight,
+    loadingDuration,
+    commands,
+  ]);
+
+  const handleTabCompletion = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Tab" && !e.shiftKey && inputValue.startsWith("?")) {
+        e.preventDefault();
+
+        const matchingCommands = commandNames.filter(
+          (cmd) => cmd.startsWith(inputValue) && cmd !== inputValue
+        );
+
+        if (matchingCommands.length > 0) {
+          setInputValue(matchingCommands[0]);
+        }
+      }
+    },
+    [inputValue, commandNames]
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Handle tab completion
+      handleTabCompletion(e);
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
@@ -117,7 +170,7 @@ function AIInput({
         onClose?.();
       }
     },
-    [handleSubmit, onClose]
+    [handleSubmit, onClose, handleTabCompletion]
   );
 
   const handleInputChange = useCallback(
