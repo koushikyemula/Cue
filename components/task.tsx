@@ -17,6 +17,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { ViewIcon, CalendarIcon } from "lucide-react";
 import { addDays } from "date-fns";
 import AiInput from "./ui/ai-input";
+import { useSwipeable } from "react-swipeable";
 
 const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
   <div className="flex flex-col items-center justify-center text-center min-h-[60dvh] p-8 space-y-2">
@@ -212,9 +213,11 @@ export default function Task({
 
   const handleViewModeChange = useCallback(
     (mode: "date" | "all") => {
-      if (mode === "date" && viewMode !== "date") {
+      if (mode === viewMode) return;
+
+      if (mode === "date") {
         dispatch({ type: "SET_DATE_MODE" });
-      } else if (mode === "all" && viewMode !== "all") {
+      } else {
         dispatch({ type: "SET_ALL_MODE" });
       }
     },
@@ -272,14 +275,37 @@ export default function Task({
     handleViewModeChange,
   ]);
 
+  // Handle swipe gestures for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (viewMode === "date" && isMobile) {
+        handleViewModeChange("all");
+      }
+    },
+    onSwipedRight: () => {
+      if (viewMode === "all" && isMobile) {
+        handleViewModeChange("date");
+      }
+    },
+    trackMouse: false,
+    trackTouch: true,
+    delta: 50,
+    preventScrollOnSwipe: false,
+    rotationAngle: 0,
+  });
+
   return (
-    <div
-      className="w-full flex flex-col h-full bg-neutral-900"
-      key={viewModeKey}
-    >
+    <div className="w-full flex flex-col h-full bg-neutral-900">
       <div className="flex items-center justify-between sticky bg-neutral-900 top-0 z-30 py-2 border-b border-neutral-800/40">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 overflow-hidden border-input rounded-md border bg-neutral-900 dark:bg-neutral-900/80">
+          <div className="flex h-9 overflow-hidden border-input rounded-md border bg-neutral-900 dark:bg-neutral-900/80 relative">
+            <div
+              className="absolute h-full bg-neutral-800 z-0 w-1/2 transition-transform duration-300 ease-out"
+              style={{
+                transform:
+                  viewMode === "date" ? "translateX(0)" : "translateX(100%)",
+              }}
+            />
             <button
               type="button"
               onClick={() => {
@@ -287,9 +313,9 @@ export default function Task({
                   handleViewModeChange("date");
                 }
               }}
-              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${
                 viewMode === "date"
-                  ? "bg-neutral-800 text-foreground"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
               }`}
               aria-label="Switch to date view"
@@ -305,9 +331,9 @@ export default function Task({
                   handleViewModeChange("all");
                 }
               }}
-              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${
                 viewMode === "all"
-                  ? "bg-neutral-800 text-foreground"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
               }`}
               aria-label="Switch to all tasks view"
@@ -317,7 +343,6 @@ export default function Task({
               <ViewIcon size={14} />
             </button>
           </div>
-
           {viewMode === "date" && (
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
@@ -365,7 +390,6 @@ export default function Task({
               </PopoverContent>
             </Popover>
           )}
-
           {viewMode === "all" && (
             <div className="h-9 px-4 py-2 bg-neutral-900 dark:bg-neutral-900/80 border border-border/40 rounded-md flex items-center dark:border-input gap-2">
               <span className="flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400">
@@ -386,36 +410,78 @@ export default function Task({
             </div>
           )}
         </div>
-
         {filteredTasks.length > 0 && (
           <div className="hidden sm:flex items-center animate-in fade-in duration-300">
             <Progress progress={taskCounts.progress} size={24} />
           </div>
         )}
       </div>
-
       <div className="pt-2 bg-neutral-900/90 relative z-10"></div>
+
       <div
-        className="flex-1 overflow-y-auto mt-0 relative z-0"
-        aria-live="polite"
+        className="flex-1 overflow-hidden relative"
+        {...(isMobile ? swipeHandlers : {})}
       >
         {!isClientLoaded ? (
-          <TaskSkeleton />
+          <div className="overflow-y-auto h-full">
+            <TaskSkeleton />
+          </div>
         ) : sortedTasks.length === 0 ? (
-          <EmptyState isMobile={isMobile} />
+          <div className="overflow-y-auto h-full">
+            <EmptyState isMobile={isMobile} />
+          </div>
         ) : (
-          <TaskList
-            tasks={sortedTasks}
-            onToggle={toggleTask}
-            onDelete={deleteTask}
-            onEdit={startEditing}
-            editingTaskId={editingTaskId}
-            editText={editText}
-            setEditText={setEditText}
-            handleEditTask={handleEditTask}
-            cancelEditing={cancelEditing}
-            viewMode={viewMode}
-          />
+          <div className="relative h-full overflow-hidden">
+            <div
+              className="absolute inset-0 transition-all duration-300 ease-in-out"
+              style={{
+                transform: `translateX(${
+                  viewMode === "date" ? "0%" : "-100%"
+                })`,
+                opacity: viewMode === "date" ? 1 : 0,
+                zIndex: viewMode === "date" ? 20 : 10,
+              }}
+            >
+              <div className="h-full overflow-y-auto">
+                <TaskList
+                  tasks={sortTasks([...dateFilteredTasks], sortBy)}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onEdit={startEditing}
+                  editingTaskId={editingTaskId}
+                  editText={editText}
+                  setEditText={setEditText}
+                  handleEditTask={handleEditTask}
+                  cancelEditing={cancelEditing}
+                  viewMode="date"
+                />
+              </div>
+            </div>
+
+            <div
+              className="absolute inset-0 transition-all duration-300 ease-in-out"
+              style={{
+                transform: `translateX(${viewMode === "all" ? "0%" : "100%"})`,
+                opacity: viewMode === "all" ? 1 : 0,
+                zIndex: viewMode === "all" ? 20 : 10,
+              }}
+            >
+              <div className="h-full overflow-y-auto">
+                <TaskList
+                  tasks={sortTasks([...allTasks], sortBy)}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onEdit={startEditing}
+                  editingTaskId={editingTaskId}
+                  editText={editText}
+                  setEditText={setEditText}
+                  handleEditTask={handleEditTask}
+                  cancelEditing={cancelEditing}
+                  viewMode="all"
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
       {isMobile && !isInputVisible && (
@@ -423,6 +489,7 @@ export default function Task({
           <AiInput
             placeholder="Enter your task here..."
             minHeight={50}
+            isMobile={isMobile}
             onClose={onInputClose}
             onSubmit={onInputSubmit}
           />

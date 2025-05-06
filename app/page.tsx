@@ -299,7 +299,7 @@ function HomePage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
+              className="h-9 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
             >
               <ArrowsClockwise
                 className={cn(

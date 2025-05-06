@@ -258,10 +258,14 @@ function AIInput({
             <span className="font-mono bg-neutral-800/70 px-1 py-0.5 rounded text-neutral-400">
               ?help
             </span>{" "}
-            or{" "}
-            <span className="font-mono bg-neutral-800/70 px-1 py-0.5 rounded text-neutral-400">
-              ?shortcuts
-            </span>{" "}
+            {!isMobile && (
+              <>
+                or{" "}
+                <span className="font-mono bg-neutral-800/70 px-1 py-0.5 rounded text-neutral-400">
+                  ?shortcuts
+                </span>{" "}
+              </>
+            )}
             for assistance
           </p>
         </div>

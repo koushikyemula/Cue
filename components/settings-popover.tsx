@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Settings } from "lucide-react";
+import { ListRestart, Settings } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SortOption } from "@/types";
+import { toast } from "sonner";
 
 export interface UserSettings {
   defaultAIInputOpen: boolean;
@@ -73,6 +74,11 @@ export function SettingsPopover({
     [settings, setSettings]
   );
 
+  const handleResetSettings = useCallback(() => {
+    setSettings(defaultSettings);
+    toast.success("Settings reset to defaults");
+  }, [setSettings]);
+
   const handleOpenChange = useCallback((open: boolean) => {
     setIsOpen(open);
   }, []);
@@ -83,12 +89,11 @@ export function SettingsPopover({
         <Button
           variant="outline"
           size="sm"
-          className="h-8 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
+          className="h-9 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
         >
           <Settings
             className={cn(
               "h-4 w-4 transition-transform duration-200",
-              isMobile && "hidden",
               isOpen && "rotate-90"
             )}
           />
@@ -97,24 +102,40 @@ export function SettingsPopover({
       </PopoverTrigger>
       <PopoverContent className="w-[300px]" align="end" sideOffset={8}>
         <div className="space-y-4">
-          <h4 className="font-medium text-base leading-none">Settings</h4>
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="ai-input-default" className="text-xs">
-                Input
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Show input by default
-              </p>
-            </div>
-            <Switch
-              id="ai-input-default"
-              checked={settings.defaultAIInputOpen}
-              onCheckedChange={(checked) =>
-                handleSwitchChange(checked, "defaultAIInputOpen")
-              }
-            />
+            <h4 className="font-medium text-base leading-none">Settings</h4>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Reset to default settings"
+              onClick={handleResetSettings}
+              className={cn(
+                "h-7 w-7 hover:bg-accent/40 cursor-pointer border-0 text-muted-foreground hover:text-foreground transition-colors",
+                settings === defaultSettings ? "opacity-0" : "opacity-100"
+              )}
+            >
+              <ListRestart className="h-3.5 w-3.5" />
+            </Button>
           </div>
+          {!isMobile && (
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="ai-input-default" className="text-xs">
+                  Input
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Show input by default
+                </p>
+              </div>
+              <Switch
+                id="ai-input-default"
+                checked={settings.defaultAIInputOpen}
+                onCheckedChange={(checked) =>
+                  handleSwitchChange(checked, "defaultAIInputOpen")
+                }
+              />
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="auto-remove-completed" className="text-xs">
