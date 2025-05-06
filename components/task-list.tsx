@@ -118,8 +118,8 @@ const TaskEditForm = memo(
     return (
       <motion.div
         className="flex-1 flex flex-col w-full py-1 gap-4"
-        initial={{ height: 0, opacity: 0, scale: 0.96 }}
-        animate={{ height: "auto", opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{
           type: "tween",
           ease: "easeOut",
@@ -134,7 +134,7 @@ const TaskEditForm = memo(
             onChange={handleEditInputChange}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full h-12 py-2 text-base font-normal bg-background border border-border/20  shadow-sm focus-visible:ring-1 focus-visible:ring-primary px-3"
+            className="w-full h-12 py-2 text-base font-normal bg-background border border-border/20 shadow-sm focus-visible:ring-1 focus-visible:ring-primary px-3"
             placeholder="Edit task..."
           />
         </div>
@@ -207,86 +207,6 @@ const TaskEditForm = memo(
 );
 TaskEditForm.displayName = "TaskEditForm";
 
-const TaskView = memo(
-  ({
-    task,
-    onToggle,
-    onEdit,
-    onDelete,
-    isMobile,
-  }: {
-    task: any;
-    onToggle: (id: string) => void;
-    onEdit: (id: string, text: string) => void;
-    onDelete: (id: string) => void;
-    isMobile: boolean;
-  }) => {
-    return (
-      <>
-        <CircleCheckbox
-          checked={task.completed}
-          onCheckedChange={() => onToggle(task.id)}
-          className={cn(
-            task.completed
-              ? "border-muted-foreground/50 bg-muted-foreground/20"
-              : "hover:border-primary/50"
-          )}
-        />
-        <motion.div
-          className="flex-1 flex flex-col min-w-0 cursor-pointer"
-          onClick={() => onToggle(task.id)}
-          layout
-        >
-          <motion.div layout className="flex items-center gap-1.5">
-            <motion.span
-              layout
-              className={cn(
-                "text-[15px] transition-colors duration-100 break-words whitespace-pre-line",
-                task.completed && "line-through text-muted-foreground/50"
-              )}
-            >
-              {task.text}
-            </motion.span>
-          </motion.div>
-          <motion.div layout className="flex items-center gap-2 mt-1">
-            <TimeDisplay time={task.scheduled_time} />
-            {task.priority && <PriorityIndicator priority={task.priority} />}
-          </motion.div>
-        </motion.div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-7 w-7 text-muted-foreground hover:text-foreground  ",
-              isMobile
-                ? "opacity-80"
-                : "opacity-0 group-hover:opacity-80 transition-opacity"
-            )}
-            onClick={() => onEdit(task.id, task.text)}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-7 w-7 text-muted-foreground hover:text-destructive  ",
-              isMobile
-                ? "opacity-80"
-                : "opacity-0 group-hover:opacity-80 transition-opacity"
-            )}
-            onClick={() => onDelete(task.id)}
-          >
-            <X className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </>
-    );
-  }
-);
-TaskView.displayName = "TaskView";
-
 interface TaskListProps {
   tasks: TaskItem[];
   onToggle: (id: string) => void;
@@ -336,9 +256,9 @@ export function TaskList({
   }, [editingTaskId, tasks]);
 
   const animationVariants = {
-    initial: { opacity: 0, height: "auto" },
-    animate: { opacity: 1, height: "auto" },
-    exit: { opacity: 0, height: 0, transition: { duration: 0.15 } },
+    initial: { opacity: 1 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0, transition: { duration: 0.15 } },
   };
 
   const animationTransition = {
@@ -349,7 +269,7 @@ export function TaskList({
 
   return (
     <div className="space-y-px">
-      <AnimatePresence initial={false} mode="popLayout">
+      <AnimatePresence initial={false}>
         {tasks.map((task) => (
           <motion.div
             key={task.id}
@@ -358,7 +278,6 @@ export function TaskList({
             exit={animationVariants.exit}
             transition={animationTransition}
             layout="position"
-            layoutDependency={editingTaskId === task.id}
             className={cn(
               "group flex items-center py-2.5 px-4 gap-3.5",
               task.completed && editingTaskId !== task.id
@@ -441,7 +360,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-7 w-7 text-muted-foreground hover:text-foreground  ",
+                      "h-7 w-7 text-muted-foreground cursor-pointer hover:text-foreground  ",
                       isMobile
                         ? "opacity-80"
                         : "opacity-0 group-hover:opacity-80 transition-opacity"
@@ -457,7 +376,7 @@ export function TaskList({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-7 w-7 text-muted-foreground hover:text-destructive  ",
+                      "h-7 w-7 text-muted-foreground cursor-pointer hover:text-destructive  ",
                       isMobile
                         ? "opacity-80"
                         : "opacity-0 group-hover:opacity-80 transition-opacity"

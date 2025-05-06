@@ -439,7 +439,7 @@ export default function Task({
                   viewMode === "date" ? "0%" : "-100%"
                 })`,
                 opacity: viewMode === "date" ? 1 : 0,
-                zIndex: viewMode === "date" ? 20 : 10,
+                visibility: viewMode === "date" ? "visible" : "hidden",
               }}
             >
               <div className="h-full overflow-y-auto">
@@ -463,7 +463,7 @@ export default function Task({
               style={{
                 transform: `translateX(${viewMode === "all" ? "0%" : "100%"})`,
                 opacity: viewMode === "all" ? 1 : 0,
-                zIndex: viewMode === "all" ? 20 : 10,
+                visibility: viewMode === "all" ? "visible" : "hidden",
               }}
             >
               <div className="h-full overflow-y-auto">
