@@ -16,11 +16,27 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
 
     if (!isMobile) return;
 
+    if (localStorage.getItem("pwa-prompt-dismissed") === "true") return;
+
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true;
+
+    if (isStandalone) return;
+
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
 
       setTimeout(() => {
-        e.prompt();
+        e.prompt()
+          .then(() => {
+            return e.userChoice;
+          })
+          .then((choiceResult) => {
+            if (choiceResult.outcome === "dismissed") {
+              localStorage.setItem("pwa-prompt-dismissed", "true");
+            }
+          });
       }, promptDelay);
     };
 

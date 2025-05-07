@@ -33,7 +33,7 @@ class AppDatabase extends Dexie {
   tasks: Dexie.Table<TaskItem, string>;
 
   constructor() {
-    super("xlr8-db");
+    super("cue-db");
     this.version(1).stores({
       tasks:
         "id, text, completed, date, created_at, updated_at, scheduled_time, priority",
@@ -110,7 +110,7 @@ export function useIndexedDB<T>(storeName: string, initialValue: T) {
 
         // Set filename with date for versioning
         const date = new Date().toISOString().split("T")[0];
-        link.download = `xlr8-tasks-${date}.json`;
+        link.download = `cue-tasks-${date}.json`;
         link.href = url;
         link.click();
 

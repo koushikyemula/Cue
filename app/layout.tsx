@@ -36,15 +36,17 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "XLR8",
+  title: "Cue",
   description:
-    "XLR8 - A sleek, minimalist task manager that helps you focus on what matters.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://xlr8.dev"),
+    "Cue - A sleek, minimalist task manager that helps you focus on what matters.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://cuedot.tech"
+  ),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "XLR8",
+    title: "Cue",
   },
   formatDetection: {
     telephone: false,

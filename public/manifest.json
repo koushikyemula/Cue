@@ -1,8 +1,8 @@
 {
-  "id": "com.xlr8.app",
-  "name": "XLR8",
-  "short_name": "XLR8",
-  "description": "XLR8 - Fast and reliable app",
+  "id": "com.cue.app",
+  "name": "Cue",
+  "short_name": "Cue",
+  "description": "Cue - A sleek, minimalist task manager that helps you focus on what matters.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
