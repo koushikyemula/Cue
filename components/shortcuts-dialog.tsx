@@ -15,6 +15,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Command, Info, Keyboard } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ShortcutHelp {
   title: string;
@@ -31,12 +32,18 @@ export function ShortcutsDialog({
   onOpenChange: (open: boolean) => void;
   isMobile?: boolean;
 }) {
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(navigator.userAgent.indexOf("Mac") !== -1);
+  }, []);
+
   const shortcuts: ShortcutHelp[] = [
     {
       title: "Command Menu",
       keys: (
         <span className="flex items-center gap-1">
-          <Command className="h-3 w-3" />
+          {isMac ? <Command className="h-3 w-3" /> : <span>Ctrl</span>}
           <span>+</span>
           <span>K</span>
         </span>
@@ -68,7 +75,7 @@ export function ShortcutsDialog({
       title: "Previous Day",
       keys: (
         <span className="flex items-center gap-1">
-          <span>Alt</span>
+          <span>{isMac ? "Option" : "Alt"}</span>
           <span>+</span>
           <span>[</span>
         </span>
@@ -79,7 +86,7 @@ export function ShortcutsDialog({
       title: "Next Day",
       keys: (
         <span className="flex items-center gap-1">
-          <span>Alt</span>
+          <span>{isMac ? "Option" : "Alt"}</span>
           <span>+</span>
           <span>]</span>
         </span>
