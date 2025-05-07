@@ -45,8 +45,10 @@ function HomePage() {
     useState<UserSettings>(defaultSettings);
 
   useEffect(() => {
-    if (userSettings.defaultAIInputOpen && !isMobile) {
+    if (userSettings.defaultAIInputOpen) {
       setIsInputVisible(true);
+    } else if (!isMobile) {
+      setIsInputVisible(false);
     }
   }, [userSettings.defaultAIInputOpen, isMobile]);
 
@@ -355,7 +357,7 @@ function HomePage() {
         />
       </div>
       <AnimatePresence>
-        {isInputVisible && !isMobile && (
+        {(isInputVisible || isMobile) && (
           <motion.div
             className="fixed bottom-0 left-0 right-0 bg-neutral-900 shadow-lg z-50"
             ref={inputRef}

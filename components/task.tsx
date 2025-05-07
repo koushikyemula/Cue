@@ -513,17 +513,6 @@ export default function Task({
           </span>
         </div>
       )}
-      {isMobile && !isInputVisible && (
-        <div className="mt-4">
-          <AiInput
-            placeholder="Enter your task here..."
-            minHeight={50}
-            isMobile={isMobile}
-            onClose={onInputClose}
-            onSubmit={onInputSubmit}
-          />
-        </div>
-      )}
     </div>
   );
 }
