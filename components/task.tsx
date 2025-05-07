@@ -8,38 +8,37 @@ import {
   sortTasks,
 } from "@/lib/utils/task";
 import { SortOption, TaskItem } from "@/types";
-import { useCallback, useEffect, useMemo, useState, useReducer } from "react";
+import { addDays } from "date-fns";
+import { CalendarIcon, ViewIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useSwipeable } from "react-swipeable";
 import { Progress } from "./progress";
 import { TaskList } from "./task-list";
+import AiInput from "./ui/ai-input";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { useMediaQuery } from "@/hooks/use-media-query";
-import { ViewIcon, CalendarIcon } from "lucide-react";
-import { addDays } from "date-fns";
-import AiInput from "./ui/ai-input";
-import { useSwipeable } from "react-swipeable";
 
-const EmptyState = ({ isMobile }: { isMobile: boolean }) => (
-  <div className="flex flex-col items-center justify-center text-center min-h-[60dvh] p-8 space-y-2">
-    {!isMobile && (
-      <p className="text-sm text-muted-foreground max-w-[280px]">
-        Press <kbd className="bg-muted px-1 rounded">⌘K</kbd> to add a new task
-      </p>
-    )}
-    {isMobile && (
-      <>
+const EmptyState = ({ isMobile }: { isMobile: boolean }) => {
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const shortcutKey = isMac ? "⌘K" : "Ctrl+K";
+  return (
+    <div className="flex flex-col items-center justify-center text-center min-h-[60dvh] p-8 space-y-2">
+      {!isMobile && (
+        <p className="text-sm text-muted-foreground max-w-[280px]">
+          Press <kbd className="bg-muted px-1 rounded">{shortcutKey}</kbd> to
+          add a new task
+        </p>
+      )}
+      {isMobile && (
         <p className="text-sm text-muted-foreground max-w-[280px]">
           Use the input box below to add a new task
         </p>
-
-        <span className="text-xs text-muted-foreground opacity-70 mt-2 flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 border border-muted-foreground/30 rounded-full"></span>
-          Swipe to switch views
-        </span>
-      </>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
+};
 
 export const calculateProgress = (tasks: TaskItem[]) => {
   const completedCount = tasks.filter((task) => task.completed).length;
@@ -69,6 +68,7 @@ interface TaskProps {
   onInputClose?: () => void;
   onInputSubmit?: (text: string) => void;
   defaultViewMode?: "date" | "all";
+  isMobile?: boolean;
 }
 
 export default function Task({
@@ -78,6 +78,7 @@ export default function Task({
   isInputVisible = false,
   onInputClose = () => {},
   onInputSubmit = () => {},
+  isMobile = false,
   defaultViewMode = "date",
 }: TaskProps) {
   const [isClientLoaded, setIsClientLoaded] = useState(false);
@@ -105,8 +106,6 @@ export default function Task({
 
   const viewMode = viewState.mode;
   const viewModeKey = viewState.key;
-
-  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     setIsClientLoaded(true);
@@ -365,32 +364,37 @@ export default function Task({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="group h-9 px-4 py-2 hover:cursor-pointer bg-neutral-900 dark:bg-neutral-900/80 border border-border hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-200 flex items-center gap-3"
+                  className="group h-9 px-4 py-2 hover:cursor-pointer bg-neutral-900 dark:bg-neutral-900/80 border border-border hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-300 ease-in-out flex items-center gap-2 lg:gap-3 w-auto"
                   aria-label={`Select date: currently ${formatDate(
                     selectedDate
                   )}`}
                   data-calendar-trigger="true"
                 >
-                  <span className="font-medium text-foreground dark:text-zinc-200">
+                  <span className="font-medium text-foreground text-center dark:text-zinc-200">
                     {formatDate(selectedDate)}
                   </span>
-                  <span className="flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400">
+                  <span className="flex-1 lg:flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400 hidden">
                     <span>{taskCounts.remaining}</span>
                     <span className="ml-1">
                       {taskCounts.remaining === 1 ? "task" : "tasks"}
                     </span>
                     {taskCounts.completed > 0 && (
-                      <span className="flex items-center ml-1">
-                        <span className="h-1 w-1 rounded-full bg-muted-foreground/30 mx-1.5" />
-                        <span className="text-muted-foreground/70 dark:text-neutral-500">
+                      <span className="flex items-center ml-1 animate-in slide-in-from-left-2 duration-300 ease-in-out w-auto max-w-[200px] transition-all overflow-hidden">
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/30 mx-1.5 animate-in fade-in duration-300" />
+                        <span className="text-muted-foreground/70 dark:text-neutral-500 animate-in fade-in duration-300">
                           {taskCounts.completed}
                         </span>
-                        <span className="ml-1 text-muted-foreground/60 dark:text-neutral-500">
+                        <span className="ml-1 text-muted-foreground/60 dark:text-neutral-500 animate-in fade-in duration-300">
                           done
                         </span>
                       </span>
                     )}
                   </span>
+                  {filteredTasks.length > 0 && (
+                    <span className="flex lg:hidden items-center">
+                      <Progress progress={taskCounts.progress} size={16} />
+                    </span>
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -428,7 +432,7 @@ export default function Task({
           )}
         </div>
         {filteredTasks.length > 0 && (
-          <div className="hidden sm:flex items-center animate-in fade-in duration-300">
+          <div className="hidden lg:flex items-center">
             <Progress progress={taskCounts.progress} size={24} />
           </div>
         )}

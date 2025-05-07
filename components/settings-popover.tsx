@@ -31,7 +31,7 @@ export interface UserSettings {
 }
 
 export const defaultSettings: UserSettings = {
-  defaultAIInputOpen: false,
+  defaultAIInputOpen: true,
   autoRemoveCompleted: false,
   defaultViewMode: "date",
   defaultPriority: undefined,

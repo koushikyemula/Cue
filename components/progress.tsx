@@ -18,7 +18,9 @@ export function Progress({ progress, size = 20 }: ProgressProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="text-xs font-medium text-neutral-400">{progress}%</div>
+      <div className="text-xs font-medium text-neutral-400 min-w-[28px] text-right">
+        {progress}%
+      </div>
 
       <div
         className="relative rounded-md overflow-hidden"

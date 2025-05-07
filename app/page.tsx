@@ -351,6 +351,7 @@ function HomePage() {
           onInputClose={handleClose}
           onInputSubmit={handleSubmit}
           defaultViewMode={userSettings.defaultViewMode}
+          isMobile={isMobile}
         />
       </div>
       <AnimatePresence>
