@@ -65,7 +65,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
           suppressHydrationWarning
         >
-          <InstallPWA promptDelay={3000} />
+          <InstallPWA />
           <OfflineBanner />
           <Providers>{children}</Providers>
           <Toaster />

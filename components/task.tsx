@@ -14,7 +14,6 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import { Progress } from "./progress";
 import { TaskList } from "./task-list";
-import AiInput from "./ui/ai-input";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
@@ -64,9 +63,6 @@ interface TaskProps {
   initialTasks: TaskItem[];
   setTasks: (value: TaskItem[] | ((val: TaskItem[]) => TaskItem[])) => void;
   sortBy: SortOption;
-  isInputVisible?: boolean;
-  onInputClose?: () => void;
-  onInputSubmit?: (text: string) => void;
   defaultViewMode?: "date" | "all";
   isMobile?: boolean;
 }
@@ -75,9 +71,6 @@ export default function Task({
   initialTasks,
   setTasks,
   sortBy,
-  isInputVisible = false,
-  onInputClose = () => {},
-  onInputSubmit = () => {},
   isMobile = false,
   defaultViewMode = "date",
 }: TaskProps) {

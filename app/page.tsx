@@ -349,9 +349,6 @@ function HomePage() {
             }
           }}
           sortBy={sortBy}
-          isInputVisible={isInputVisible}
-          onInputClose={handleClose}
-          onInputSubmit={handleSubmit}
           defaultViewMode={userSettings.defaultViewMode}
           isMobile={isMobile}
         />
