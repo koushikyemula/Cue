@@ -39,7 +39,7 @@ const nextConfig = async (phase: string): Promise<NextConfig> => {
     const withSerwist = (await import("@serwist/next")).default({
       swSrc: "lib/service-worker/worker.ts",
       swDest: "public/sw.js",
-      reloadOnOnline: true,
+      reloadOnOnline: false,
     });
     return withSerwist(nextConfigBase);
   }

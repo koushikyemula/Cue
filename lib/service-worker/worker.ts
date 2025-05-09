@@ -34,3 +34,16 @@ const serwist = new Serwist({
 
 // Add event listeners for the service worker lifecycle
 serwist.addEventListeners();
+
+// Add a handler for install events to ensure the app works offline from the start
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open("app-shell").then((cache) => {
+      return cache.addAll([
+        "/",
+        "/icons/icon-192-192.png",
+        "/icons/icon-512-512.png",
+      ]);
+    })
+  );
+});

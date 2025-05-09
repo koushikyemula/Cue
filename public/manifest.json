@@ -24,5 +24,14 @@
       "type": "image/png"
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Home",
+      "url": "/",
+      "description": "Go to the home page"
+    }
+  ],
+  "scope": "/",
+  "display_override": ["standalone", "window-controls-overlay"]
 }
