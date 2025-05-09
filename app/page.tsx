@@ -278,7 +278,6 @@ function HomePage() {
                   syncOpen && "rotate-90"
                 )}
               />
-              <span className="text-xs">Sync</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
