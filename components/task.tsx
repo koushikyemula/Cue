@@ -430,8 +430,7 @@ export default function Task({
           </div>
         )}
       </div>
-      <div className="pt-2 bg-neutral-900/90 relative z-10"></div>
-
+      <div className="pt-[0.5px] bg-neutral-800 relative z-10"></div>
       <div
         className="flex-1 overflow-hidden relative"
         {...(isMobile ? swipeHandlers : {})}

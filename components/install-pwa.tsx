@@ -19,11 +19,9 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
     0
   );
 
-  if (isDesktop) {
-    return null;
-  }
-
   useEffect(() => {
+    if (isDesktop) return;
+
     const daysSinceLastDismissal =
       (Date.now() - lastPromptDate) / (1000 * 60 * 60 * 24);
     if (isDismissed && daysSinceLastDismissal < 2) return;
@@ -65,7 +63,7 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
         handleBeforeInstallPrompt
       );
     };
-  }, [isDismissed, lastPromptDate, promptDelay]);
+  }, [isDismissed, lastPromptDate, promptDelay, isDesktop]);
 
   const handleInstallClick = () => {
     if (!installPrompt) return;
@@ -162,6 +160,10 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
       </motion.div>
     );
   };
+
+  if (isDesktop) {
+    return null;
+  }
 
   return (
     <AnimatePresence>
