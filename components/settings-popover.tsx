@@ -23,21 +23,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export interface UserSettings {
+  aiEnabled: boolean;
   defaultAIInputOpen: boolean;
   autoRemoveCompleted: boolean;
   defaultViewMode: "date" | "all";
   defaultPriority: "high" | "medium" | "low" | undefined;
   defaultSortBy: SortOption;
-  aiEnabled: boolean;
 }
 
 export const defaultSettings: UserSettings = {
+  aiEnabled: true,
   defaultAIInputOpen: true,
   autoRemoveCompleted: false,
   defaultViewMode: "date",
   defaultPriority: undefined,
   defaultSortBy: "newest",
-  aiEnabled: true,
 };
 
 export function SettingsPopover({
@@ -52,6 +52,16 @@ export function SettingsPopover({
     "user-settings",
     defaultSettings
   );
+
+  // Ensure any new default settings are applied to existing saved settings
+  useEffect(() => {
+    const mergedSettings = { ...defaultSettings, ...settings };
+
+    // Check if merged settings differ from current settings
+    if (JSON.stringify(mergedSettings) !== JSON.stringify(settings)) {
+      setSettings(mergedSettings);
+    }
+  }, [settings, setSettings]);
 
   useEffect(() => {
     onSettingsChange(settings);
