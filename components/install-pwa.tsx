@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Share, X } from "lucide-react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useMediaQuery } from "@/hooks";
 
 export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [isDismissed, setIsDismissed] = useLocalStorage(
@@ -16,6 +18,10 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
     "lastPromptDate",
     0
   );
+
+  if (isDesktop) {
+    return null;
+  }
 
   useEffect(() => {
     const daysSinceLastDismissal =
