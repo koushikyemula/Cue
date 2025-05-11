@@ -109,7 +109,7 @@ function HomePage() {
                 text: action.text || text,
                 completed: false,
                 date: taskDate,
-                scheduled_time: action.time,
+                scheduled_time: action.scheduled_time,
                 priority: action.priority || userSettings.defaultPriority,
               })
             );
@@ -158,7 +158,6 @@ function HomePage() {
                     scheduled_time:
                       action.scheduled_time || task.scheduled_time,
                   };
-
                   // Only update priority if explicitly provided in the action
                   if (action.priority !== undefined) {
                     updatedTask.priority = action.priority;

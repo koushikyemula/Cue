@@ -7,7 +7,7 @@ export type DetermineActionResponse = {
     text?: string;
     taskId?: string;
     targetDate?: string;
-    time?: string;
+    scheduled_time?: string;
     priority?: "high" | "medium" | "low"; // Priority level for the task item
     sortBy?: "newest" | "oldest" | "alphabetical" | "completed" | "priority";
     status?: "complete" | "incomplete";
