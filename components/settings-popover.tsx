@@ -1,17 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { ListRestart, Settings } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -19,7 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { cn } from "@/lib/utils";
 import { SortOption } from "@/types";
+import { ListRestart, Settings } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export interface UserSettings {
@@ -28,6 +28,7 @@ export interface UserSettings {
   defaultViewMode: "date" | "all";
   defaultPriority: "high" | "medium" | "low" | undefined;
   defaultSortBy: SortOption;
+  aiEnabled: boolean;
 }
 
 export const defaultSettings: UserSettings = {
@@ -36,6 +37,7 @@ export const defaultSettings: UserSettings = {
   defaultViewMode: "date",
   defaultPriority: undefined,
   defaultSortBy: "newest",
+  aiEnabled: true,
 };
 
 export function SettingsPopover({
@@ -104,7 +106,6 @@ export function SettingsPopover({
               isOpen && "rotate-90"
             )}
           />
-          {/* <span className="text-xs">Settings</span> */}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px]" align="end" sideOffset={8}>
@@ -128,6 +129,23 @@ export function SettingsPopover({
             >
               <ListRestart className="h-3.5 w-3.5" />
             </Button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="ai-enabled" className="text-xs">
+                AI Features
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Enable AI capabilities for task creation
+              </p>
+            </div>
+            <Switch
+              id="ai-enabled"
+              checked={settings.aiEnabled}
+              onCheckedChange={(checked) =>
+                handleSwitchChange(checked, "aiEnabled")
+              }
+            />
           </div>
           {!isMobile && (
             <div className="flex items-center justify-between">

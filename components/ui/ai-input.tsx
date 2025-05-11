@@ -21,8 +21,7 @@ interface AIInputProps {
   minHeight?: number;
   maxHeight?: number;
   defaultSelected?: string;
-  loadingDuration?: number;
-  onSubmit?: (text: string, action?: string) => void;
+  onSubmit?: (text: string, onComplete?: () => void) => void;
   onClose: () => void;
   className?: string;
   isMobile?: boolean;
@@ -33,7 +32,6 @@ function AIInput({
   placeholder = "Enter your text here...",
   minHeight = 64,
   maxHeight = 200,
-  loadingDuration = 3000,
   onSubmit,
   onClose,
   className,
@@ -116,25 +114,19 @@ function AIInput({
 
     if (trimmedInput && !submitted) {
       setSubmitted(true);
-      onSubmit?.(trimmedInput);
       setInputValue("");
       adjustHeight(true);
 
-      setTimeout(() => {
+      const handleComplete = () => {
         setSubmitted(false);
         if (textareaRef.current) {
           textareaRef.current.focus();
         }
-      }, loadingDuration);
+      };
+
+      onSubmit?.(trimmedInput, handleComplete);
     }
-  }, [
-    inputValue,
-    submitted,
-    onSubmit,
-    adjustHeight,
-    loadingDuration,
-    commands,
-  ]);
+  }, [inputValue, submitted, onSubmit, adjustHeight, commands]);
 
   const handleTabCompletion = useCallback(
     (e: React.KeyboardEvent) => {

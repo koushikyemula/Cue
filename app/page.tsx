@@ -214,10 +214,31 @@ function HomePage() {
   );
 
   const handleSubmit = useCallback(
-    async (text: string) => {
+    async (text: string, onComplete?: () => void) => {
       if (!text.trim()) return;
 
       try {
+        if (!userSettings.aiEnabled) {
+          setTasks([
+            ...tasks,
+            serializeTask({
+              id: Math.random().toString(36).substring(7),
+              text,
+              completed: false,
+              date: new Date(),
+              priority: userSettings.defaultPriority,
+            }),
+          ]);
+
+          toast.success("Task created", {
+            description: text,
+            duration: 2000,
+          });
+
+          onComplete?.();
+          return;
+        }
+
         const selectedDate = new Date();
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const { actions } = await determineAction(
@@ -226,7 +247,6 @@ function HomePage() {
           "llama-3.3",
           timezone
         );
-
         const newTasks = processActions(actions, text, selectedDate);
         setTasks(newTasks);
 
@@ -240,6 +260,7 @@ function HomePage() {
             }
           });
         }
+        onComplete?.();
       } catch (error) {
         console.error("AI Action failed:", error);
         setTasks([
@@ -257,9 +278,16 @@ function HomePage() {
           description: text,
           duration: 2000,
         });
+        onComplete?.();
       }
     },
-    [tasks, processActions, setTasks, userSettings.defaultPriority]
+    [
+      tasks,
+      processActions,
+      setTasks,
+      userSettings.defaultPriority,
+      userSettings.aiEnabled,
+    ]
   );
 
   return (
@@ -364,7 +392,11 @@ function HomePage() {
           >
             <div className="max-w-md mx-auto pb-6">
               <AiInput
-                placeholder="Enter your task here..."
+                placeholder={
+                  userSettings.aiEnabled
+                    ? "Enter your task here..."
+                    : "Enter your task here... (AI disabled)"
+                }
                 minHeight={50}
                 onClose={handleClose}
                 onSubmit={handleSubmit}

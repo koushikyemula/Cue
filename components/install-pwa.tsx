@@ -89,7 +89,7 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-auto md:max-w-sm p-3 bg-neutral-800/90 shadow-md rounded-md border border-neutral-800/40 z-50"
+        className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-auto md:max-w-sm p-3 bg-neutral-800 shadow-md rounded-md border border-neutral-800/40 z-50"
       >
         <div className="flex items-center gap-3">
           <img
@@ -130,7 +130,7 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -30 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="fixed top-5 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:max-w-sm p-3 bg-neutral-800/90 shadow-md rounded-md border border-neutral-800/40 z-50"
+        className="fixed top-5 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:max-w-sm p-3 bg-neutral-800 shadow-md rounded-md border border-neutral-800 z-50"
       >
         <div className="flex items-start gap-3">
           <img
@@ -147,7 +147,7 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
           </div>
           <button
             onClick={handleDismiss}
-            className="p-1.5 text-neutral-400 hover:bg-neutral-700/80 hover:text-neutral-300 rounded-full -mt-1 transition-colors"
+            className="p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-300 -mt-1 transition-colors"
             aria-label="Dismiss"
           >
             <X className="w-4 h-4" />

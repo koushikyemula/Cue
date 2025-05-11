@@ -13,7 +13,6 @@ export const serverEnv = createEnv({
         "ANTHROPIC_API_KEY must be a valid Anthropic API key starting with 'sk-ant-'",
     }),
     GROQ_API_KEY: z.string().min(1, "GROQ_API_KEY is required"),
-    ELEVENLABS_API_KEY: z.string().min(1, "ELEVENLABS_API_KEY is required"),
   },
   experimental__runtimeEnv: process.env,
 });

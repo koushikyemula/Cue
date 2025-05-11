@@ -1,12 +1,11 @@
-import { Analytics } from "@vercel/analytics/react";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Providers } from "@/components/providers";
-import { Viewport, Metadata } from "next";
 import { InstallPWA } from "@/components/install-pwa";
 import { OfflineBanner } from "@/components/offline-banner";
-import { ClerkProvider } from "@clerk/nextjs";
-import "./globals.css";
+import { Providers } from "@/components/providers";
+import { Analytics } from "@vercel/analytics/react";
+import { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,19 +58,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" className="h-full" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
-          suppressHydrationWarning
-        >
-          <InstallPWA />
-          <OfflineBanner />
-          <Providers>{children}</Providers>
-          <Toaster />
-          <Analytics />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
+        suppressHydrationWarning
+      >
+        <InstallPWA />
+        <OfflineBanner />
+        <Providers>{children}</Providers>
+        <Toaster />
+        <Analytics />
+      </body>
+    </html>
   );
 }
