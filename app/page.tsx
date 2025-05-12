@@ -43,6 +43,7 @@ function HomePage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [userSettings, setUserSettings] =
     useState<UserSettings>(defaultSettings);
+  const [currentSelectedDate, setCurrentSelectedDate] = useState(new Date());
 
   useEffect(() => {
     if (userSettings.defaultAIInputOpen) {
@@ -228,7 +229,7 @@ function HomePage() {
               id: Math.random().toString(36).substring(7),
               text,
               completed: false,
-              date: new Date(),
+              date: currentSelectedDate,
               priority: userSettings.defaultPriority,
             }),
           ]);
@@ -241,7 +242,6 @@ function HomePage() {
           return;
         }
 
-        const selectedDate = new Date();
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const { actions } = await determineAction(
           text,
@@ -249,7 +249,7 @@ function HomePage() {
           "llama-3.3",
           timezone
         );
-        const newTasks = processActions(actions, text, selectedDate);
+        const newTasks = processActions(actions, text, currentSelectedDate);
         setTasks(newTasks);
 
         if (actions.length > 0) {
@@ -271,7 +271,7 @@ function HomePage() {
             id: Math.random().toString(36).substring(7),
             text,
             completed: false,
-            date: new Date(),
+            date: currentSelectedDate,
             priority: userSettings.defaultPriority,
           }),
         ]);
@@ -288,6 +288,7 @@ function HomePage() {
       setTasks,
       userSettings.defaultPriority,
       userSettings.aiEnabled,
+      currentSelectedDate,
     ]
   );
 
@@ -380,6 +381,7 @@ function HomePage() {
           defaultViewMode={userSettings.defaultViewMode}
           isMobile={isMobile}
           pendingIndicator={userSettings.pendingEnabled}
+          onDateChange={setCurrentSelectedDate}
         />
       </div>
       <AnimatePresence>

@@ -66,6 +66,7 @@ interface TaskProps {
   defaultViewMode?: "date" | "all";
   isMobile?: boolean;
   pendingIndicator?: boolean;
+  onDateChange?: (date: Date) => void;
 }
 
 export default function Task({
@@ -75,6 +76,7 @@ export default function Task({
   sortBy,
   isMobile = false,
   defaultViewMode = "date",
+  onDateChange,
 }: TaskProps) {
   const [isClientLoaded, setIsClientLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -206,20 +208,24 @@ export default function Task({
     [setTasks, cancelEditing]
   );
 
-  const handleDateSelect = useCallback((date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
-      setCalendarOpen(false);
-      setTimeout(() => {
-        const trigger = document.querySelector(
-          '[data-calendar-trigger="true"]'
-        );
-        if (trigger instanceof HTMLElement) {
-          trigger.focus();
-        }
-      }, 100);
-    }
-  }, []);
+  const handleDateSelect = useCallback(
+    (date: Date | undefined) => {
+      if (date) {
+        setSelectedDate(date);
+        onDateChange?.(date);
+        setCalendarOpen(false);
+        setTimeout(() => {
+          const trigger = document.querySelector(
+            '[data-calendar-trigger="true"]'
+          );
+          if (trigger instanceof HTMLElement) {
+            trigger.focus();
+          }
+        }, 100);
+      }
+    },
+    [onDateChange]
+  );
 
   const handleViewModeChange = useCallback(
     (mode: "date" | "all") => {
@@ -252,22 +258,26 @@ export default function Task({
       if (e.altKey) {
         if (e.key === "[" || e.code === "BracketLeft") {
           e.preventDefault();
-          if (viewMode === "date") {
-            setSelectedDate((prev) => {
-              const newDate = addDays(prev, -1);
-              return newDate;
-            });
+          if (viewMode === "all") {
+            handleViewModeChange("date");
           }
+          setSelectedDate((prev) => {
+            const newDate = addDays(prev, -1);
+            onDateChange?.(newDate);
+            return newDate;
+          });
         }
 
         if (e.key === "]" || e.code === "BracketRight") {
           e.preventDefault();
-          if (viewMode === "date") {
-            setSelectedDate((prev) => {
-              const newDate = addDays(prev, 1);
-              return newDate;
-            });
+          if (viewMode === "all") {
+            handleViewModeChange("date");
           }
+          setSelectedDate((prev) => {
+            const newDate = addDays(prev, 1);
+            onDateChange?.(newDate);
+            return newDate;
+          });
         }
       }
     };
@@ -283,7 +293,12 @@ export default function Task({
     editingTaskId,
     cancelEditing,
     handleViewModeChange,
+    onDateChange,
   ]);
+
+  useEffect(() => {
+    onDateChange?.(selectedDate);
+  }, [onDateChange, selectedDate]);
 
   // Handle swipe gestures for mobile
   const swipeHandlers = useSwipeable({
@@ -493,6 +508,7 @@ export default function Task({
                   handleEditTask={handleEditTask}
                   cancelEditing={cancelEditing}
                   viewMode="all"
+                  pendingIndicator={pendingIndicator}
                 />
               </div>
             </div>

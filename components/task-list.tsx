@@ -68,7 +68,7 @@ const TaskEditForm = memo(
     setEditTime: (time: string) => void;
     editPriority: "high" | "medium" | "low" | undefined;
     setEditPriority: (priority: "high" | "medium" | "low" | undefined) => void;
-    handleEditTask: (task: any) => void;
+    handleEditTask: (task: TaskItem) => void;
     cancelEditing: () => void;
   }) => {
     const editInputRef = useRef<HTMLInputElement>(null);
@@ -330,7 +330,6 @@ export function TaskList({
         {tasks.map((task) => {
           const isPending =
             pendingIndicator &&
-            viewMode === "all" &&
             !task.completed &&
             task.date &&
             isDateBeforeToday(task.date);
