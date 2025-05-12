@@ -4,7 +4,7 @@ import { z } from "zod";
 export const clientEnv = createEnv({
   client: {
     NEXT_PUBLIC_WEB_URL: z.string().url(),
-    NEXT_PUBLIC_APP_NAME: z.string().default("xlr8").optional(),
+    NEXT_PUBLIC_APP_NAME: z.string().default("cue").optional(),
   },
   runtimeEnv: {
     NEXT_PUBLIC_WEB_URL: process.env.NEXT_PUBLIC_WEB_URL,
