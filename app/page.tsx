@@ -230,7 +230,6 @@ function HomePage() {
           ]);
 
           toast.success("Task created", {
-            description: text,
             duration: 2000,
           });
 
@@ -274,7 +273,6 @@ function HomePage() {
         ]);
 
         toast.success("Task created", {
-          description: text,
           duration: 2000,
         });
         onComplete?.();

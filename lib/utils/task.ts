@@ -54,8 +54,14 @@ export const sortTasks = (tasks: TaskItem[], sortBy: string) => {
   return [...tasks].sort((a, b) => {
     switch (sortBy) {
       case "newest":
+        if (a.created_at && b.created_at) {
+          return b.created_at.getTime() - a.created_at.getTime();
+        }
         return b.id.localeCompare(a.id);
       case "oldest":
+        if (a.created_at && b.created_at) {
+          return a.created_at.getTime() - b.created_at.getTime();
+        }
         return a.id.localeCompare(b.id);
       case "alphabetical":
         return a.text.localeCompare(b.text);
