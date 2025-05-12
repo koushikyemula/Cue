@@ -391,15 +391,13 @@ function HomePage() {
           >
             <div className="max-w-md mx-auto pb-6">
               <AiInput
-                placeholder={
-                  userSettings.aiEnabled
-                    ? "Enter your task here..."
-                    : "Enter your task here... (AI disabled)"
-                }
+                placeholder={"What's next?"}
                 minHeight={50}
                 onClose={handleClose}
                 onSubmit={handleSubmit}
                 isMobile={isMobile}
+                aiDisabled={!userSettings.aiEnabled}
+                className={userSettings.aiEnabled ? "" : "ai-disabled"}
               />
             </div>
           </motion.div>

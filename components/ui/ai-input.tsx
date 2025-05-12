@@ -1,13 +1,13 @@
 "use client";
 
+import { AIHelpDialog } from "@/components/ai-help-dialog";
+import { ShortcutsDialog } from "@/components/shortcuts-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { ArrowElbowRightUp } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import { CornerRightUp } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { AIHelpDialog } from "@/components/ai-help-dialog";
-import { ShortcutsDialog } from "@/components/shortcuts-dialog";
 
 type Command = {
   name: string;
@@ -25,17 +25,19 @@ interface AIInputProps {
   onClose: () => void;
   className?: string;
   isMobile?: boolean;
+  aiDisabled?: boolean;
 }
 
 function AIInput({
   id = "ai-input",
-  placeholder = "Enter your text here...",
+  placeholder = "Add a task...",
   minHeight = 64,
   maxHeight = 200,
   onSubmit,
   onClose,
   className,
   isMobile = false,
+  aiDisabled = false,
 }: AIInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -73,6 +75,10 @@ function AIInput({
   );
 
   const commandNames = useMemo(() => Object.keys(commands), [commands]);
+
+  const adjustedPlaceholder = useMemo(() => {
+    return placeholder;
+  }, [placeholder]);
 
   useEffect(() => {
     const textareaElement = textareaRef.current;
@@ -192,9 +198,10 @@ function AIInput({
         isFocused
           ? "border-black/30 dark:border-white/30 shadow-sm"
           : "border-black/10 dark:border-white/10",
-        " bg-black/[0.03] dark:bg-neutral-900"
+        " bg-black/[0.03] dark:bg-neutral-900",
+        aiDisabled && "dark:border-neutral-700/50"
       ),
-    [isFocused]
+    [isFocused, aiDisabled]
   );
 
   const textareaClass = useMemo(
@@ -203,9 +210,10 @@ function AIInput({
         "max-w-xl w-full pr-10 py-4 placeholder:text-black/50 dark:placeholder:text-neutral-400",
         "border-none focus:ring-0 text-black dark:text-white resize-none text-wrap",
         "focus-visible:ring-0 focus-visible:ring-offset-0 leading-[1.2]",
-        `min-h-[${minHeight}px] transition-all duration-200`
+        `min-h-[${minHeight}px] transition-all duration-200`,
+        aiDisabled && "pl-16"
       ),
-    [minHeight]
+    [minHeight, aiDisabled]
   );
 
   const submitButtonClass = useMemo(
@@ -270,7 +278,7 @@ function AIInput({
                 <Textarea
                   ref={textareaRef}
                   id={id}
-                  placeholder={placeholder}
+                  placeholder={adjustedPlaceholder}
                   className={textareaClass}
                   value={inputValue}
                   onChange={handleInputChange}
@@ -294,9 +302,17 @@ function AIInput({
                   style={{ animationDuration: "3s" }}
                 />
               ) : (
-                <CornerRightUp className={iconClass} />
+                <ArrowElbowRightUp className={iconClass} />
               )}
             </motion.button>
+            {aiDisabled && (
+              <div className="absolute left-3 top-[50%] -translate-y-1/2 pointer-events-none">
+                <span className="flex items-center gap-1 text-xs text-neutral-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-700"></span>
+                  <span>Manual</span>
+                </span>
+              </div>
+            )}
           </motion.div>
           <p className="h-4 text-xs mt-2 text-center text-black/70 dark:text-neutral-500">
             Type{" "}
