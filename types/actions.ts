@@ -1,5 +1,5 @@
-import { Model } from "@/lib/models";
-import { TaskItem } from "./index";
+import type { Model } from "@/lib/models";
+import type { TaskItem } from "./index";
 
 export type DetermineActionResponse = {
   actions: Array<{

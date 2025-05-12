@@ -88,7 +88,7 @@ function AIInput({
       }, 100);
       return () => clearTimeout(timerId);
     }
-  }, []);
+  }, [textareaRef]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -107,7 +107,7 @@ function AIInput({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [submitted]);
+  }, [submitted, textareaRef]);
 
   const handleSubmit = useCallback(() => {
     const trimmedInput = inputValue.trim();
@@ -132,7 +132,7 @@ function AIInput({
 
       onSubmit?.(trimmedInput, handleComplete);
     }
-  }, [inputValue, submitted, onSubmit, adjustHeight, commands]);
+  }, [inputValue, submitted, onSubmit, adjustHeight, commands, textareaRef]);
 
   const handleTabCompletion = useCallback(
     (e: React.KeyboardEvent) => {
@@ -242,7 +242,7 @@ function AIInput({
         textareaRef.current.focus();
       }
     },
-    [submitted]
+    [submitted, textareaRef]
   );
 
   return (

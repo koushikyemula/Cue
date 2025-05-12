@@ -8,8 +8,6 @@
     "build": "next build --turbo",
     "start": "next start",
     "lint": "next lint",
-    "lnt": "next lint",
-    "lntf": "next lint --fix",
     "tc": "tsc --noEmit",
     "clean": "rm -rf .next node_modules && rm -f pnpm-lock.yaml bun.lockb yarn.lock package-lock.json"
   },
@@ -66,8 +64,6 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "axios": "^1.8.4",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.2",
     "serwist": "^9.0.14",
     "tailwindcss": "^4",
     "typescript": "^5"

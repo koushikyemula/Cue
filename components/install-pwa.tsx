@@ -63,7 +63,7 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
         handleBeforeInstallPrompt
       );
     };
-  }, [isDismissed, lastPromptDate, promptDelay, isDesktop]);
+  }, [isDismissed, lastPromptDate, promptDelay, isDesktop, setIsDismissed]);
 
   const handleInstallClick = () => {
     if (!installPrompt) return;

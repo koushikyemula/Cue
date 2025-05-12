@@ -2,11 +2,12 @@
 
 import { determineAction } from "@/app/actions";
 import {
-  defaultSettings,
   SettingsPopover,
-  UserSettings,
+  type UserSettings,
+  defaultSettings,
 } from "@/components/settings-popover";
 import Task from "@/components/task";
+import AiInput from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
 import { FileInput } from "@/components/ui/file-input";
 import {
@@ -17,7 +18,7 @@ import {
 import { useIndexedDB, useMediaQuery } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { serializeTask } from "@/lib/utils/task";
-import { SortOption, TaskItem } from "@/types";
+import type { SortOption, TaskItem } from "@/types";
 import {
   ArrowsClockwise,
   FileArrowDown,
@@ -25,11 +26,10 @@ import {
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
-import AiInput from "@/components/ui/ai-input";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);

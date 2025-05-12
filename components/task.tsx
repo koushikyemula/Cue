@@ -100,7 +100,6 @@ export default function Task({
   );
 
   const viewMode = viewState.mode;
-  const viewModeKey = viewState.key;
 
   useEffect(() => {
     setIsClientLoaded(true);

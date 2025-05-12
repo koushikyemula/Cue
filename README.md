@@ -1,5 +1,9 @@
 # Cue
 
+<p align="center">
+  <img src="github.png" alt="Cue - AI Task Manager" width="800">
+</p>
+
 A minimalist AI-powered task manager that intuitively processes natural language to organize your day. Simply type what you need, and let AI handle the rest.
 
 ## Features
@@ -38,13 +42,13 @@ Cue understands natural language commands for task management:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Create .env file (see .env.example)
 cp .env.example .env
 
 # Start development server
-npm run dev
+pnpm run dev
 ```
 
 ## Environment Setup
@@ -65,13 +69,13 @@ NEXT_PUBLIC_APP_NAME=cue # Optional
 
 ```bash
 # Lint code
-npm run lint
+pnpm run lint
 
 # Type check
-npm run tc
+pnpm run tc
 
 # Build for production
-npm run build
+pnpm run build
 ```
 
 ## License
