@@ -4,14 +4,14 @@ A minimalist AI-powered task manager that intuitively processes natural language
 
 ## Features
 
-- 🤖 AI-powered task intelligence: Create, edit, schedule, prioritize, sort, and complete tasks using natural language
-- 🔒 Privacy-focused with local storage (IndexedDB)
-- 📱 PWA with offline support
-- 🌓 Dark mode UI
-- ⌨️ Keyboard shortcuts
-- 📱 Swipe gestures on mobile
-- 🔄 Device sync via JSON export/import
-- 🎛️ Customizable settings
+- AI-powered task intelligence: Create, edit, schedule, prioritize, sort, and complete tasks using natural language
+- Privacy-focused with local storage (IndexedDB)
+- PWA with offline support
+- Minimalistic dark themed UI
+- Keyboard shortcuts
+- Swipe gestures on mobile
+- Device sync via JSON export/import
+- Customizable settings
 
 ## Tech Stack
 
