@@ -113,7 +113,7 @@ export function AIHelpDialog({
               {action.title}
             </span>
             <span className="text-xs text-neutral-500 group-hover:text-neutral-400 transition-colors font-mono mt-0.5">
-              e.g., "{action.example}"
+              e.g., &quot;{action.example}&quot;
             </span>
           </div>
         </div>

@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cue
+
+A minimalist AI-powered task manager that intuitively processes natural language to organize your day. Simply type what you need, and let AI handle the rest.
+
+## Features
+
+- 🤖 AI-powered task intelligence: Create, edit, schedule, prioritize, sort, and complete tasks using natural language
+- 🔒 Privacy-focused with local storage (IndexedDB)
+- 📱 PWA with offline support
+- 🌓 Dark mode UI
+- ⌨️ Keyboard shortcuts
+- 📱 Swipe gestures on mobile
+- 🔄 Device sync via JSON export/import
+- 🎛️ Customizable settings
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/)
+- **AI Models**: Claude, Llama, Grok, Qwen via [ai-sdk](https://github.com/vercel/ai)
+- **UI**: [TailwindCSS](https://tailwindcss.com/)
+- **State**: Local with [IndexedDB](https://dexie.org/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Date Handling**: [date-fns](https://date-fns.org/)
+
+## AI Capabilities
+
+Cue understands natural language commands for task management:
+
+- **Intelligent Creation**: "Add team meeting tomorrow at 3pm with high priority"
+- **Smart Editing**: "Move my dentist appointment to Friday at 2pm"
+- **Quick Actions**: "Mark gym session as complete" or "Delete yesterday's tasks"
+- **Bulk Processing**: "Add buy groceries today and schedule dentist for next Friday"
+- **Time Understanding**: Automatically converts time references (2pm, morning, etc.)
+- **Date Parsing**: Handles relative dates (today, tomorrow, next week)
+- **Priority Recognition**: Identifies importance levels from your language
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Create .env file (see .env.example)
+cp .env.example .env
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file with:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+# Only ONE of these API keys is needed based on model preference
+OPENAI_API_KEY=sk-proj-your-api-key-here
+ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+GROQ_API_KEY=your-groq-api-key-here
 
-## Learn More
+NEXT_PUBLIC_WEB_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=cue # Optional
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Lint code
+npm run lint
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Type check
+npm run tc
 
-## Deploy on Vercel
+# Build for production
+npm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

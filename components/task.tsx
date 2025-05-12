@@ -85,7 +85,7 @@ export default function Task({
   const [viewState, dispatch] = useReducer(
     (
       state: { mode: "date" | "all"; key: number },
-      action: { type: string; payload?: any },
+      action: { type: string; payload?: any }
     ) => {
       switch (action.type) {
         case "SET_DATE_MODE":
@@ -96,7 +96,7 @@ export default function Task({
           return state;
       }
     },
-    { mode: defaultViewMode, key: 0 },
+    { mode: defaultViewMode, key: 0 }
   );
 
   const viewMode = viewState.mode;
@@ -116,12 +116,12 @@ export default function Task({
 
   const dateFilteredTasks = useMemo(
     () => (isClientLoaded ? filterTasksByDate(initialTasks, selectedDate) : []),
-    [initialTasks, selectedDate, isClientLoaded],
+    [initialTasks, selectedDate, isClientLoaded]
   );
 
   const allTasks = useMemo(
     () => (isClientLoaded ? initialTasks : []),
-    [initialTasks, isClientLoaded],
+    [initialTasks, isClientLoaded]
   );
 
   const filteredTasks = useMemo(() => {
@@ -131,7 +131,7 @@ export default function Task({
     } else {
       return [...allTasks];
     }
-  }, [viewMode, dateFilteredTasks, allTasks, isClientLoaded, viewModeKey]);
+  }, [viewMode, dateFilteredTasks, allTasks, isClientLoaded]);
 
   const sortedTasks = useMemo(() => {
     if (!isClientLoaded) return [];
@@ -148,24 +148,24 @@ export default function Task({
       tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
 
     return { completed, remaining, progress };
-  }, [dateFilteredTasks, allTasks, viewMode, isClientLoaded, viewModeKey]);
+  }, [dateFilteredTasks, allTasks, viewMode, isClientLoaded]);
 
   const toggleTask = useCallback(
     (id: string) => {
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
-          task.id === id ? { ...task, completed: !task.completed } : task,
-        ),
+          task.id === id ? { ...task, completed: !task.completed } : task
+        )
       );
     },
-    [setTasks],
+    [setTasks]
   );
 
   const deleteTask = useCallback(
     (id: string) => {
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
     },
-    [setTasks],
+    [setTasks]
   );
 
   const startEditing = useCallback((id: string, text: string) => {
@@ -197,14 +197,14 @@ export default function Task({
               });
             }
             return task;
-          }),
+          })
         );
         cancelEditing();
       } catch (error) {
         console.error("Failed to update task:", error);
       }
     },
-    [setTasks, cancelEditing],
+    [setTasks, cancelEditing]
   );
 
   const handleDateSelect = useCallback((date: Date | undefined) => {
@@ -213,7 +213,7 @@ export default function Task({
       setCalendarOpen(false);
       setTimeout(() => {
         const trigger = document.querySelector(
-          '[data-calendar-trigger="true"]',
+          '[data-calendar-trigger="true"]'
         );
         if (trigger instanceof HTMLElement) {
           trigger.focus();
@@ -232,7 +232,7 @@ export default function Task({
         dispatch({ type: "SET_ALL_MODE" });
       }
     },
-    [viewMode],
+    [viewMode]
   );
 
   useEffect(() => {
@@ -324,10 +324,11 @@ export default function Task({
                   handleViewModeChange("date");
                 }
               }}
-              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${viewMode === "date"
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${
+                viewMode === "date"
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
-                }`}
+              }`}
               aria-label="Switch to date view"
               aria-pressed={viewMode === "date"}
               title="View tasks by date"
@@ -341,10 +342,11 @@ export default function Task({
                   handleViewModeChange("all");
                 }
               }}
-              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${viewMode === "all"
+              className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${
+                viewMode === "all"
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
-                }`}
+              }`}
               aria-label="Switch to all tasks view"
               aria-pressed={viewMode === "all"}
               title="View all tasks"
@@ -359,7 +361,7 @@ export default function Task({
                   variant="outline"
                   className="group h-9 px-4 py-2 hover:cursor-pointer bg-neutral-900 dark:bg-neutral-900/80 border border-border hover:bg-background/70 dark:hover:bg-neutral-800 transition-all duration-300 ease-in-out flex items-center gap-2 lg:gap-3 w-auto"
                   aria-label={`Select date: currently ${formatDate(
-                    selectedDate,
+                    selectedDate
                   )}`}
                   data-calendar-trigger="true"
                 >
@@ -448,8 +450,9 @@ export default function Task({
             <div
               className="absolute inset-0 transition-all duration-300 ease-in-out"
               style={{
-                transform: `translateX(${viewMode === "date" ? "0%" : "-100%"
-                  })`,
+                transform: `translateX(${
+                  viewMode === "date" ? "0%" : "-100%"
+                })`,
                 opacity: viewMode === "date" ? 1 : 0,
                 visibility: viewMode === "date" ? "visible" : "hidden",
               }}

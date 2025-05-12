@@ -145,8 +145,8 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
           <div className="flex-grow">
             <p className="text-sm font-medium text-neutral-200">Install app</p>
             <p className="mt-0.5 text-xs text-neutral-400 flex items-center gap-1">
-              Tap <Share className="w-3 h-3 text-neutral-300" /> then "Add to
-              Home Screen"
+              Tap <Share className="w-3 h-3 text-neutral-300" /> then &quot;Add
+              to Home Screen&quot;
             </p>
           </div>
           <button

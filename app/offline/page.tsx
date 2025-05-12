@@ -60,11 +60,11 @@ export default function OfflinePage() {
         </div>
 
         <h1 className="text-2xl font-medium mb-3 text-zinc-900 dark:text-zinc-50">
-          You're offline
+          You&apos;re offline
         </h1>
 
         <p className="text-zinc-600 dark:text-zinc-300 mb-2">
-          It looks like you've lost your internet connection.
+          It looks like you&apos;ve lost your internet connection.
         </p>
 
         <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8">
