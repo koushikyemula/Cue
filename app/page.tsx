@@ -35,7 +35,7 @@ function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
   const [tasks, setTasks, exportData, importData] = useIndexedDB<TaskItem[]>(
     "tasks",
-    []
+    [],
   );
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const inputRef = useRef<HTMLDivElement>(null);
@@ -89,7 +89,7 @@ function HomePage() {
         setSyncOpen(false);
       }
     },
-    [importData]
+    [importData],
   );
 
   const processActions = useCallback(
@@ -111,7 +111,7 @@ function HomePage() {
                 date: taskDate,
                 scheduled_time: action.scheduled_time,
                 priority: action.priority || userSettings.defaultPriority,
-              })
+              }),
             );
             break;
           }
@@ -176,7 +176,7 @@ function HomePage() {
               switch (action.listToClear) {
                 case "all":
                   newTasks = tasks.filter(
-                    (task) => format(task.date, "yyyy-MM-dd") !== dateStr
+                    (task) => format(task.date, "yyyy-MM-dd") !== dateStr,
                   );
                   break;
                 case "completed":
@@ -185,7 +185,7 @@ function HomePage() {
                       !(
                         task.completed &&
                         format(task.date, "yyyy-MM-dd") === dateStr
-                      )
+                      ),
                   );
                   break;
                 case "incomplete":
@@ -194,7 +194,7 @@ function HomePage() {
                       !(
                         !task.completed &&
                         format(task.date, "yyyy-MM-dd") === dateStr
-                      )
+                      ),
                   );
                   break;
               }
@@ -209,7 +209,7 @@ function HomePage() {
 
       return newTasks;
     },
-    [tasks, handleExport, userSettings.defaultPriority]
+    [tasks, handleExport, userSettings.defaultPriority],
   );
 
   const handleSubmit = useCallback(
@@ -243,7 +243,7 @@ function HomePage() {
           text,
           tasks,
           "llama-3.3",
-          timezone
+          timezone,
         );
         const newTasks = processActions(actions, text, selectedDate);
         setTasks(newTasks);
@@ -284,7 +284,7 @@ function HomePage() {
       setTasks,
       userSettings.defaultPriority,
       userSettings.aiEnabled,
-    ]
+    ],
   );
 
   return (
@@ -300,7 +300,7 @@ function HomePage() {
               <ArrowsClockwise
                 className={cn(
                   "h-4 w-4 transition-transform duration-200",
-                  syncOpen && "rotate-90"
+                  syncOpen && "rotate-90",
                 )}
               />
             </Button>
@@ -347,9 +347,8 @@ function HomePage() {
         />
       </div>
       <div
-        className={`flex-1 w-full max-w-md mx-auto px-4 pt-3 ${
-          isInputVisible ? "pb-[130px]" : "pb-6"
-        } bg-neutral-900 overflow-hidden`}
+        className={`flex-1 w-full max-w-md mx-auto px-4 pt-3 ${isInputVisible ? "pb-[130px]" : "pb-6"
+          } bg-neutral-900 overflow-hidden`}
       >
         <Task
           initialTasks={tasks}
@@ -368,13 +367,14 @@ function HomePage() {
               setTasks(
                 userSettings.autoRemoveCompleted
                   ? updatedTasks.filter((task) => !task.completed)
-                  : updatedTasks
+                  : updatedTasks,
               );
             }
           }}
           sortBy={sortBy}
           defaultViewMode={userSettings.defaultViewMode}
           isMobile={isMobile}
+          pendingIndicator={userSettings.pendingEnabled}
         />
       </div>
       <AnimatePresence>

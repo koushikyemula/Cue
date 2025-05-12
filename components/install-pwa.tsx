@@ -97,7 +97,7 @@ export function InstallPWA({ promptDelay = 1500 }: { promptDelay?: number }) {
       >
         <div className="flex items-center gap-3">
           <img
-            src="/icons/icon-192-192.png"
+            src="/icons/icon-192x192.png"
             alt="App Icon"
             className="w-10 h-10 rounded-md"
           />

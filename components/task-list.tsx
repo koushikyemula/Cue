@@ -260,6 +260,7 @@ interface TaskListProps {
   handleEditTask: (task: TaskItem) => void;
   cancelEditing: () => void;
   viewMode?: "date" | "all";
+  pendingIndicator?: boolean;
 }
 
 export function TaskList({
@@ -273,6 +274,7 @@ export function TaskList({
   handleEditTask,
   cancelEditing,
   viewMode = "date",
+  pendingIndicator,
 }: TaskListProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [editTime, setEditTime] = useState<string>("");
@@ -327,6 +329,7 @@ export function TaskList({
       <AnimatePresence initial={false}>
         {tasks.map((task) => {
           const isPending =
+            pendingIndicator &&
             viewMode === "all" &&
             !task.completed &&
             task.date &&

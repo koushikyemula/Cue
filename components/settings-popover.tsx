@@ -26,6 +26,7 @@ export interface UserSettings {
   aiEnabled: boolean;
   defaultAIInputOpen: boolean;
   autoRemoveCompleted: boolean;
+  pendingEnabled: boolean;
   defaultViewMode: "date" | "all";
   defaultPriority: "high" | "medium" | "low" | undefined;
   defaultSortBy: SortOption;
@@ -35,6 +36,7 @@ export const defaultSettings: UserSettings = {
   aiEnabled: true,
   defaultAIInputOpen: true,
   autoRemoveCompleted: false,
+  pendingEnabled: true,
   defaultViewMode: "date",
   defaultPriority: undefined,
   defaultSortBy: "newest",
@@ -50,7 +52,7 @@ export function SettingsPopover({
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useLocalStorage<UserSettings>(
     "user-settings",
-    defaultSettings
+    defaultSettings,
   );
 
   // Ensure any new default settings are applied to existing saved settings
@@ -74,7 +76,7 @@ export function SettingsPopover({
         [setting]: checked,
       });
     },
-    [settings, setSettings]
+    [settings, setSettings],
   );
 
   const handleSelectChange = useCallback(
@@ -85,7 +87,7 @@ export function SettingsPopover({
           setting === "defaultPriority" && value === "none" ? undefined : value,
       });
     },
-    [settings, setSettings]
+    [settings, setSettings],
   );
 
   const handleResetSettings = useCallback(() => {
@@ -99,7 +101,7 @@ export function SettingsPopover({
 
   const isDefaultSettings = useMemo(
     () => JSON.stringify(settings) === JSON.stringify(defaultSettings),
-    [settings]
+    [settings],
   );
 
   return (
@@ -113,7 +115,7 @@ export function SettingsPopover({
           <Settings
             className={cn(
               "h-4 w-4 transition-transform duration-200",
-              isOpen && "rotate-90"
+              isOpen && "rotate-90",
             )}
           />
         </Button>
@@ -123,7 +125,7 @@ export function SettingsPopover({
           <div
             className={cn(
               "flex items-center justify-between",
-              isDefaultSettings && "py-1.5"
+              isDefaultSettings && "py-1.5",
             )}
           >
             <h4 className="font-medium text-base leading-none">Settings</h4>
@@ -134,7 +136,7 @@ export function SettingsPopover({
               onClick={handleResetSettings}
               className={cn(
                 "h-7 w-7 hover:bg-accent/40 cursor-pointer flex border-0 text-muted-foreground hover:text-foreground transition-colors",
-                isDefaultSettings && "hidden"
+                isDefaultSettings && "hidden",
               )}
             >
               <ListRestart className="h-3.5 w-3.5" />
@@ -190,6 +192,23 @@ export function SettingsPopover({
               checked={settings.autoRemoveCompleted}
               onCheckedChange={(checked) =>
                 handleSwitchChange(checked, "autoRemoveCompleted")
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="ai-enabled" className="text-xs">
+                Pending Indicator
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Enable Pending Indicator for overdue tasks
+              </p>
+            </div>
+            <Switch
+              id="pending-enabled"
+              checked={settings.pendingEnabled}
+              onCheckedChange={(checked) =>
+                handleSwitchChange(checked, "pendingEnabled")
               }
             />
           </div>
