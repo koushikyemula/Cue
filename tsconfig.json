@@ -21,8 +21,14 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["@serwist/next/typings"]
+    "types": ["@serwist/next/typings", "@cloudflare/workers-types/2023-07-01"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "worker-configuration.d.ts"
+  ],
   "exclude": ["node_modules"]
 }
