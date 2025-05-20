@@ -1,6 +1,6 @@
+import { TaskItem } from "@/types";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useCallback, useState } from "react";
-import { TaskItem } from "@/types";
 import { toast } from "sonner";
 
 interface GoogleCalendarEvent {
@@ -18,7 +18,7 @@ interface GoogleCalendarEvent {
 }
 
 export function useGoogleCalendar() {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn } = useAuth();
   const { user } = useUser();
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -33,11 +33,44 @@ export function useGoogleCalendar() {
     );
   }, [isSignedIn, user]);
 
-  // Convert task to Google Calendar event
+  // Get Google OAuth token directly from Clerk
+  const getGoogleToken = useCallback(async (): Promise<string | null> => {
+    if (!isSignedIn || !user) return null;
+
+    try {
+      const googleAccount = user.externalAccounts.find(
+        (account) =>
+          account.provider === "google" &&
+          account.verification?.status === "verified"
+      );
+
+      if (!googleAccount) {
+        toast.error("Google account not connected", {
+          description: "Please connect your Google account in settings",
+        });
+        return null;
+      }
+      const response = await fetch(`/api/get-oauth-token?provider=google`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to get OAuth token");
+      }
+
+      const data = await response.json();
+      return data.token;
+    } catch (error) {
+      console.error("Failed to get Google token:", error);
+      toast.error("Failed to get Google Calendar access", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+      return null;
+    }
+  }, [isSignedIn, user]);
+
   const taskToEvent = useCallback((task: TaskItem): GoogleCalendarEvent => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    // Set start time based on scheduled_time or default to noon
     let startDateTime = new Date(task.date);
     if (task.scheduled_time) {
       const [hours, minutes] = task.scheduled_time.split(":").map(Number);
@@ -46,11 +79,9 @@ export function useGoogleCalendar() {
       startDateTime.setHours(12, 0, 0, 0);
     }
 
-    // Set end time 1 hour after start time
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 1);
 
-    // Create description with task priority
     let description = task.text;
     if (task.priority) {
       description += `\nPriority: ${task.priority}`;
@@ -80,7 +111,7 @@ export function useGoogleCalendar() {
       try {
         setIsSyncing(true);
 
-        const token = await getToken({ template: "google_calendar" });
+        const token = await getGoogleToken();
         if (!token) {
           throw new Error("Failed to get Google Calendar token");
         }
@@ -115,7 +146,7 @@ export function useGoogleCalendar() {
         setIsSyncing(false);
       }
     },
-    [isSignedIn, hasGoogleConnected, getToken, taskToEvent]
+    [isSignedIn, hasGoogleConnected, getGoogleToken, taskToEvent]
   );
 
   // Update event in Google Calendar
@@ -128,7 +159,7 @@ export function useGoogleCalendar() {
       try {
         setIsSyncing(true);
 
-        const token = await getToken({ template: "google_calendar" });
+        const token = await getGoogleToken();
         if (!token) {
           throw new Error("Failed to get Google Calendar token");
         }
@@ -162,7 +193,7 @@ export function useGoogleCalendar() {
         setIsSyncing(false);
       }
     },
-    [isSignedIn, hasGoogleConnected, getToken, taskToEvent]
+    [isSignedIn, hasGoogleConnected, getGoogleToken, taskToEvent]
   );
 
   // Delete event from Google Calendar
@@ -175,7 +206,7 @@ export function useGoogleCalendar() {
       try {
         setIsSyncing(true);
 
-        const token = await getToken({ template: "google_calendar" });
+        const token = await getGoogleToken();
         if (!token) {
           throw new Error("Failed to get Google Calendar token");
         }
@@ -190,8 +221,11 @@ export function useGoogleCalendar() {
           }
         );
 
-        if (!response.ok && response.status !== 410) {
-          // 410 Gone means already deleted
+        if (
+          !response.ok &&
+          response.status !== 404 &&
+          response.status !== 410
+        ) {
           const error = await response.json();
           throw new Error(error.error?.message || "Failed to delete event");
         }
@@ -207,7 +241,7 @@ export function useGoogleCalendar() {
         setIsSyncing(false);
       }
     },
-    [isSignedIn, hasGoogleConnected, getToken]
+    [isSignedIn, hasGoogleConnected, getGoogleToken]
   );
 
   return {

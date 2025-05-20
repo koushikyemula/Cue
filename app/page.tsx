@@ -396,6 +396,7 @@ function HomePage() {
             <Button
               variant="outline"
               size="sm"
+              data-sync-trigger
               className="h-9 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
             >
               <ArrowsClockwise
@@ -407,7 +408,7 @@ function HomePage() {
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[230px] p-0 border-border/40 bg-neutral-800/90 dark:bg-neutral-800/90 shadow-md"
+            className="w-[240px] p-0 border-border/40 bg-neutral-800/90 dark:bg-neutral-800/90 shadow-md"
             align="end"
             sideOffset={8}
           >
@@ -439,12 +440,9 @@ function HomePage() {
                   </Button>
                 </FileInput>
               </div>
-
-              {userSettings.syncWithGoogleCalendar && (
-                <div className="border-t px-3 py-3">
-                  <GoogleCalendarSync />
-                </div>
-              )}
+              <div className="border-t px-3 py-2.5">
+                <GoogleCalendarSync />
+              </div>
             </div>
           </PopoverContent>
         </Popover>

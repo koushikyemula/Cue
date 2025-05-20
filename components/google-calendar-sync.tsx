@@ -1,19 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { useGoogleCalendar } from "@/hooks";
 import { SignInButton, SignOutButton, useAuth, useUser } from "@clerk/nextjs";
-import { CalendarPlus, LogIn, LogOut } from "lucide-react";
+import { Calendar, LogIn } from "lucide-react";
 import { FC, useState } from "react";
 import { toast } from "sonner";
 
-interface GoogleCalendarSyncProps {
-  className?: string;
-  variant?: "default" | "minimal";
-}
-
-const GoogleCalendarSync: FC<GoogleCalendarSyncProps> = ({
-  className = "",
-  variant = "default",
-}) => {
+const GoogleCalendarSync: FC = () => {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { hasGoogleConnected } = useGoogleCalendar();
@@ -24,34 +16,27 @@ const GoogleCalendarSync: FC<GoogleCalendarSyncProps> = ({
 
     try {
       setIsLoading(true);
-      // Use OAuth2 to connect to Google Calendar with the correct redirect URI
       window.location.href = `https://accounts.clerk.dev/oauth_connect?provider=oauth_google&redirect_url=${encodeURIComponent(
         "https://just-deer-14.clerk.accounts.dev/v1/oauth_callback"
       )}`;
     } catch (error) {
       console.error("Failed to connect Google Calendar:", error);
-      toast.error("Failed to connect Google Calendar", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+      toast.error("Failed to connect Google Calendar");
       setIsLoading(false);
     }
   };
 
   if (!isSignedIn) {
     return (
-      <div className={`flex flex-col items-start gap-2 ${className}`}>
-        {variant === "default" && (
-          <p className="text-xs text-muted-foreground">
-            Sign in to sync tasks with Google Calendar
-          </p>
-        )}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-neutral-400">Calendar sync</span>
         <SignInButton mode="modal">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="gap-2 text-xs font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
+            className="px-2 h-7 text-xs text-neutral-400 border cursor-pointer hover:text-neutral-200"
           >
-            <LogIn size={14} />
+            <LogIn size={12} className="mr-1.5" />
             Sign in
           </Button>
         </SignInButton>
@@ -61,41 +46,34 @@ const GoogleCalendarSync: FC<GoogleCalendarSyncProps> = ({
 
   if (!hasGoogleConnected()) {
     return (
-      <div className={`flex flex-col items-start gap-2 ${className}`}>
-        {variant === "default" && (
-          <p className="text-xs text-muted-foreground">
-            Connect Google Calendar to sync tasks
-          </p>
-        )}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-neutral-400">Calendar sync</span>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="gap-2 text-xs font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
+          className="px-2 h-7 text-xs text-neutral-400 border cursor-pointer hover:text-neutral-200"
           onClick={handleConnect}
           disabled={isLoading}
         >
-          <CalendarPlus size={14} />
-          Connect Calendar
+          <Calendar size={12} className="mr-1.5" />
+          Connect
         </Button>
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col items-start gap-2 ${className}`}>
-      {variant === "default" && (
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          Google Calendar connected
-        </p>
-      )}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+        <span className="text-xs text-neutral-400">Calendar connected</span>
+      </div>
       <SignOutButton>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="gap-2 text-xs font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
+          className="px-2 h-7 border text-xs cursor-pointer text-neutral-400 hover:text-neutral-200"
         >
-          <LogOut size={14} />
           Disconnect
         </Button>
       </SignOutButton>

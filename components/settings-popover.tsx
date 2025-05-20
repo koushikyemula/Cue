@@ -15,13 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useGoogleCalendar } from "@/hooks/use-google-calendar";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { cn } from "@/lib/utils";
 import { SortOption } from "@/types";
 import { ListRestart, Settings } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import GoogleCalendarSync from "./google-calendar-sync";
 
 export interface UserSettings {
   aiEnabled: boolean;
@@ -106,6 +107,8 @@ export function SettingsPopover({
     () => JSON.stringify(settings) === JSON.stringify(defaultSettings),
     [settings]
   );
+
+  const { hasGoogleConnected } = useGoogleCalendar();
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange} modal>
@@ -215,6 +218,26 @@ export function SettingsPopover({
               }
             />
           </div>
+          {hasGoogleConnected() && (
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="sync-with-google-calendar" className="text-xs">
+                  Sync with Google Calendar
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Sync tasks with Google Calendar
+                </p>
+              </div>
+              <Switch
+                id="sync-with-google-calendar"
+                checked={settings.syncWithGoogleCalendar}
+                disabled={!hasGoogleConnected()}
+                onCheckedChange={(checked) =>
+                  handleSwitchChange(checked, "syncWithGoogleCalendar")
+                }
+              />
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="default-view" className="text-xs">
@@ -335,29 +358,6 @@ export function SettingsPopover({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="sync-with-google-calendar" className="text-xs">
-                Sync with Google Calendar
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Sync tasks with Google Calendar
-              </p>
-            </div>
-            <Switch
-              id="sync-with-google-calendar"
-              checked={settings.syncWithGoogleCalendar}
-              onCheckedChange={(checked) =>
-                handleSwitchChange(checked, "syncWithGoogleCalendar")
-              }
-            />
-          </div>
-
-          {settings.syncWithGoogleCalendar && (
-            <div className="pt-2 pb-1 border-t border-border/20">
-              <GoogleCalendarSync variant="minimal" />
-            </div>
-          )}
         </div>
       </PopoverContent>
     </Popover>

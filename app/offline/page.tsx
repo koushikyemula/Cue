@@ -58,7 +58,6 @@ export default function OfflinePage() {
         <div className="w-16 h-16 mx-auto mb-6 bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center">
           <RefreshCw className="h-8 w-8 text-zinc-500 dark:text-zinc-400" />
         </div>
-
         <h1 className="text-2xl font-medium mb-3 text-zinc-900 dark:text-zinc-50">
           You&apos;re offline
         </h1>
