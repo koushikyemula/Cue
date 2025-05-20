@@ -16,6 +16,8 @@ A minimalist AI-powered task manager that intuitively processes natural language
 - Swipe gestures on mobile
 - Device sync via JSON export/import
 - Customizable settings
+- Secure authentication with Clerk (Optional)
+- Google Calendar integration for task sync and notifications (Optional)
 
 ## Tech Stack
 
@@ -44,26 +46,27 @@ Cue understands natural language commands for task management:
 # Install dependencies
 pnpm install
 
-# Create .env file (see .env.example)
-cp .env.example .env
+# Copy environment variables
+cp .env.example .env.local
 
 # Start development server
 pnpm run dev
 ```
 
-## Environment Setup
+## Authentication & Calendar Integration (Optional)
 
-Create a `.env.local` file with:
+Cue uses Clerk for secure authentication and Google Calendar integration:
 
-```
-# Only ONE of these API keys is needed based on model preference
-OPENAI_API_KEY=sk-proj-your-api-key-here
-ANTHROPIC_API_KEY=sk-ant-your-api-key-here
-GROQ_API_KEY=your-groq-api-key-here
+- **Secure Sign-in**: Sign in with your Google account through Clerk
+- **Calendar Sync**: Automatically sync your tasks with Google Calendar
+- **Smart Notifications**: Get timely reminders for your tasks through Google Calendar
+- **Privacy First**: Your calendar data is only accessed with your explicit permission
 
-NEXT_PUBLIC_WEB_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=cue # Optional
-```
+To enable Google Calendar integration:
+1. Sign in with your Google account
+2. Grant calendar access permissions when prompted
+3. Your tasks will automatically sync with your calendar
+4. Configure notification preferences in your settings
 
 ## Development
 
