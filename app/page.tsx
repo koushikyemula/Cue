@@ -30,6 +30,7 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
+import Link from "next/link";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -408,6 +409,14 @@ function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
+      <footer className="w-full py-3 text-center text-xs text-neutral-500 dark:text-neutral-600 mt-auto">
+        <Link
+          href="/privacy-policy"
+          className="hover:text-neutral-400 transition-colors"
+        >
+          Privacy Policy
+        </Link>
+      </footer>
     </main>
   );
 }
