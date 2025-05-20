@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useIndexedDB, useMediaQuery } from "@/hooks";
+import { useIndexedDB, useMediaQuery, useGoogleCalendar } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { serializeTask } from "@/lib/utils/task";
 import type { SortOption, TaskItem } from "@/types";
@@ -31,6 +31,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import Link from "next/link";
+import GoogleCalendarSync from "@/components/google-calendar-sync";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -45,6 +46,13 @@ function HomePage() {
   const [userSettings, setUserSettings] =
     useState<UserSettings>(defaultSettings);
   const [currentSelectedDate, setCurrentSelectedDate] = useState(new Date());
+  const {
+    isSignedIn,
+    hasGoogleConnected,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+  } = useGoogleCalendar();
 
   useEffect(() => {
     if (userSettings.defaultAIInputOpen) {
@@ -99,123 +107,178 @@ function HomePage() {
   );
 
   const processActions = useCallback(
-    (actions: any[], text: string, selectedDate: Date) => {
+    async (actions: any[], text: string, selectedDate: Date) => {
       let newTasks = [...tasks];
 
-      actions.forEach((action) => {
-        switch (action.action) {
-          case "add": {
-            let taskDate = selectedDate;
-            if (action.targetDate) {
-              taskDate = new Date(action.targetDate);
-            }
-            newTasks.push(
-              serializeTask({
+      await Promise.all(
+        actions.map(async (action) => {
+          switch (action.action) {
+            case "add": {
+              let taskDate = selectedDate;
+              if (action.targetDate) {
+                taskDate = new Date(action.targetDate);
+              }
+              const newTask = serializeTask({
                 id: Math.random().toString(36).substring(7),
                 text: action.text || text,
                 completed: false,
                 date: taskDate,
                 scheduled_time: action.scheduled_time,
                 priority: action.priority || userSettings.defaultPriority,
-              })
-            );
-            break;
-          }
-
-          case "delete":
-            if (action.taskId) {
-              newTasks = newTasks.filter((task) => task.id !== action.taskId);
-            }
-            break;
-
-          case "mark":
-            if (action.taskId) {
-              newTasks = newTasks.map((task) => {
-                if (task.id === action.taskId) {
-                  if (action.status === "complete") {
-                    return { ...task, completed: true };
-                  } else if (action.status === "incomplete") {
-                    return { ...task, completed: false };
-                  } else {
-                    return { ...task, completed: !task.completed };
-                  }
-                }
-                return task;
               });
-            }
-            break;
 
-          case "sort":
-            if (action.sortBy) {
-              setSortBy(action.sortBy);
-            }
-            break;
-
-          case "edit":
-            if (action.taskId) {
-              newTasks = newTasks.map((task) => {
-                if (task.id === action.taskId) {
-                  const updatedTask = {
-                    ...task,
-                    text: action.text || task.text,
-                    date: action.targetDate
-                      ? new Date(action.targetDate)
-                      : task.date,
-                    scheduled_time:
-                      action.scheduled_time || task.scheduled_time,
-                  };
-                  // Only update priority if explicitly provided in the action
-                  if (action.priority !== undefined) {
-                    updatedTask.priority = action.priority;
-                  }
-
-                  return serializeTask(updatedTask);
+              // Sync with Google Calendar if enabled
+              if (
+                userSettings.syncWithGoogleCalendar &&
+                isSignedIn &&
+                hasGoogleConnected()
+              ) {
+                const eventId = await createEvent(newTask);
+                if (eventId) {
+                  newTask.gcalEventId = eventId;
+                  newTask.syncedWithGCal = true;
                 }
-                return task;
-              });
-            }
-            break;
-
-          case "clear":
-            if (action.listToClear) {
-              const dateStr = format(selectedDate, "yyyy-MM-dd");
-              switch (action.listToClear) {
-                case "all":
-                  newTasks = tasks.filter(
-                    (task) => format(task.date, "yyyy-MM-dd") !== dateStr
-                  );
-                  break;
-                case "completed":
-                  newTasks = tasks.filter(
-                    (task) =>
-                      !(
-                        task.completed &&
-                        format(task.date, "yyyy-MM-dd") === dateStr
-                      )
-                  );
-                  break;
-                case "incomplete":
-                  newTasks = tasks.filter(
-                    (task) =>
-                      !(
-                        !task.completed &&
-                        format(task.date, "yyyy-MM-dd") === dateStr
-                      )
-                  );
-                  break;
               }
-            }
-            break;
 
-          case "export":
-            handleExport();
-            break;
-        }
-      });
+              newTasks.push(newTask);
+              break;
+            }
+
+            case "delete":
+              if (action.taskId) {
+                const taskToDelete = newTasks.find(
+                  (task) => task.id === action.taskId
+                );
+                if (
+                  taskToDelete &&
+                  taskToDelete.gcalEventId &&
+                  userSettings.syncWithGoogleCalendar
+                ) {
+                  await deleteEvent(taskToDelete.gcalEventId);
+                }
+                newTasks = newTasks.filter((task) => task.id !== action.taskId);
+              }
+              break;
+
+            case "mark":
+              if (action.taskId) {
+                newTasks = newTasks.map((task) => {
+                  if (task.id === action.taskId) {
+                    const completed =
+                      action.status === "complete"
+                        ? true
+                        : action.status === "incomplete"
+                        ? false
+                        : !task.completed;
+
+                    const updatedTask = { ...task, completed };
+
+                    // Update task in Google Calendar if synced
+                    if (
+                      task.gcalEventId &&
+                      userSettings.syncWithGoogleCalendar
+                    ) {
+                      updateEvent(updatedTask, task.gcalEventId);
+                    }
+
+                    return updatedTask;
+                  }
+                  return task;
+                });
+              }
+              break;
+
+            case "sort":
+              if (action.sortBy) {
+                setSortBy(action.sortBy);
+              }
+              break;
+
+            case "edit":
+              if (action.taskId) {
+                newTasks = newTasks.map((task) => {
+                  if (task.id === action.taskId) {
+                    const updatedTask = serializeTask({
+                      ...task,
+                      text: action.text || task.text,
+                      date: action.targetDate
+                        ? new Date(action.targetDate)
+                        : task.date,
+                      scheduled_time:
+                        action.scheduled_time || task.scheduled_time,
+                      // Only update priority if explicitly provided in the action
+                      priority:
+                        action.priority !== undefined
+                          ? action.priority
+                          : task.priority,
+                    });
+
+                    // Update task in Google Calendar if synced
+                    if (
+                      task.gcalEventId &&
+                      userSettings.syncWithGoogleCalendar
+                    ) {
+                      updateEvent(updatedTask, task.gcalEventId);
+                    }
+
+                    return updatedTask;
+                  }
+                  return task;
+                });
+              }
+              break;
+
+            case "clear":
+              if (action.listToClear) {
+                const dateStr = format(selectedDate, "yyyy-MM-dd");
+                switch (action.listToClear) {
+                  case "all":
+                    newTasks = tasks.filter(
+                      (task) => format(task.date, "yyyy-MM-dd") !== dateStr
+                    );
+                    break;
+                  case "completed":
+                    newTasks = tasks.filter(
+                      (task) =>
+                        !(
+                          task.completed &&
+                          format(task.date, "yyyy-MM-dd") === dateStr
+                        )
+                    );
+                    break;
+                  case "incomplete":
+                    newTasks = tasks.filter(
+                      (task) =>
+                        !(
+                          !task.completed &&
+                          format(task.date, "yyyy-MM-dd") === dateStr
+                        )
+                    );
+                    break;
+                }
+              }
+              break;
+
+            case "export":
+              handleExport();
+              break;
+          }
+        })
+      );
 
       return newTasks;
     },
-    [tasks, handleExport, userSettings.defaultPriority]
+    [
+      tasks,
+      handleExport,
+      userSettings.defaultPriority,
+      isSignedIn,
+      hasGoogleConnected,
+      createEvent,
+      updateEvent,
+      deleteEvent,
+      userSettings,
+    ]
   );
 
   const handleSubmit = useCallback(
@@ -224,16 +287,28 @@ function HomePage() {
 
       try {
         if (!userSettings.aiEnabled) {
-          setTasks([
-            ...tasks,
-            serializeTask({
-              id: Math.random().toString(36).substring(7),
-              text,
-              completed: false,
-              date: currentSelectedDate,
-              priority: userSettings.defaultPriority,
-            }),
-          ]);
+          const newTask = serializeTask({
+            id: Math.random().toString(36).substring(7),
+            text,
+            completed: false,
+            date: currentSelectedDate,
+            priority: userSettings.defaultPriority,
+          });
+
+          // Sync with Google Calendar if enabled
+          if (
+            userSettings.syncWithGoogleCalendar &&
+            isSignedIn &&
+            hasGoogleConnected()
+          ) {
+            const eventId = await createEvent(newTask);
+            if (eventId) {
+              newTask.gcalEventId = eventId;
+              newTask.syncedWithGCal = true;
+            }
+          }
+
+          setTasks([...tasks, newTask]);
 
           toast.success("Task created", {
             duration: 2000,
@@ -250,7 +325,11 @@ function HomePage() {
           "llama-3.3",
           timezone
         );
-        const newTasks = processActions(actions, text, currentSelectedDate);
+        const newTasks = await processActions(
+          actions,
+          text,
+          currentSelectedDate
+        );
         setTasks(newTasks);
 
         if (actions.length > 0) {
@@ -266,16 +345,28 @@ function HomePage() {
         onComplete?.();
       } catch (error) {
         console.error("AI Action failed:", error);
-        setTasks([
-          ...tasks,
-          serializeTask({
-            id: Math.random().toString(36).substring(7),
-            text,
-            completed: false,
-            date: currentSelectedDate,
-            priority: userSettings.defaultPriority,
-          }),
-        ]);
+        const newTask = serializeTask({
+          id: Math.random().toString(36).substring(7),
+          text,
+          completed: false,
+          date: currentSelectedDate,
+          priority: userSettings.defaultPriority,
+        });
+
+        // Sync with Google Calendar if enabled
+        if (
+          userSettings.syncWithGoogleCalendar &&
+          isSignedIn &&
+          hasGoogleConnected()
+        ) {
+          const eventId = await createEvent(newTask);
+          if (eventId) {
+            newTask.gcalEventId = eventId;
+            newTask.syncedWithGCal = true;
+          }
+        }
+
+        setTasks([...tasks, newTask]);
 
         toast.success("Task created", {
           duration: 2000,
@@ -289,6 +380,10 @@ function HomePage() {
       setTasks,
       userSettings.defaultPriority,
       userSettings.aiEnabled,
+      userSettings.syncWithGoogleCalendar,
+      isSignedIn,
+      hasGoogleConnected,
+      createEvent,
       currentSelectedDate,
     ]
   );
@@ -344,6 +439,12 @@ function HomePage() {
                   </Button>
                 </FileInput>
               </div>
+
+              {userSettings.syncWithGoogleCalendar && (
+                <div className="border-t px-3 py-3">
+                  <GoogleCalendarSync />
+                </div>
+              )}
             </div>
           </PopoverContent>
         </Popover>

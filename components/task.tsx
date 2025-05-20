@@ -16,6 +16,9 @@ import { Progress } from "./progress";
 import { TaskList } from "./task-list";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { useGoogleCalendar } from "@/hooks";
+import { UserSettings, defaultSettings } from "./settings-popover";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 const EmptyState = ({ isMobile }: { isMobile: boolean }) => {
   const isMac =
@@ -83,6 +86,12 @@ export default function Task({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const { isSignedIn, hasGoogleConnected, updateEvent, deleteEvent } =
+    useGoogleCalendar();
+  const [settings] = useLocalStorage<UserSettings>(
+    "user-settings",
+    defaultSettings
+  );
 
   const [viewState, dispatch] = useReducer(
     (
@@ -153,20 +162,51 @@ export default function Task({
 
   const toggleTask = useCallback(
     (id: string) => {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === id ? { ...task, completed: !task.completed } : task
-        )
-      );
+      setTasks((prevTasks) => {
+        const newTasks = prevTasks.map((task) => {
+          if (task.id === id) {
+            const updatedTask = { ...task, completed: !task.completed };
+
+            // Update in Google Calendar if synced
+            if (
+              settings.syncWithGoogleCalendar &&
+              isSignedIn &&
+              hasGoogleConnected() &&
+              task.gcalEventId
+            ) {
+              updateEvent(updatedTask, task.gcalEventId);
+            }
+
+            return updatedTask;
+          }
+          return task;
+        });
+
+        return newTasks;
+      });
     },
-    [setTasks]
+    [setTasks, settings, isSignedIn, hasGoogleConnected, updateEvent]
   );
 
   const deleteTask = useCallback(
     (id: string) => {
-      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+      setTasks((prevTasks) => {
+        const taskToDelete = prevTasks.find((task) => task.id === id);
+
+        // Delete from Google Calendar if synced
+        if (
+          settings.syncWithGoogleCalendar &&
+          isSignedIn &&
+          hasGoogleConnected() &&
+          taskToDelete?.gcalEventId
+        ) {
+          deleteEvent(taskToDelete.gcalEventId);
+        }
+
+        return prevTasks.filter((task) => task.id !== id);
+      });
     },
-    [setTasks]
+    [setTasks, settings, isSignedIn, hasGoogleConnected, deleteEvent]
   );
 
   const startEditing = useCallback((id: string, text: string) => {
@@ -190,12 +230,24 @@ export default function Task({
         setTasks((prevTasks) =>
           prevTasks.map((task) => {
             if (task.id === updatedTask.id) {
-              return serializeTask({
+              const finalTask = serializeTask({
                 ...task,
                 text: updatedTask.text,
                 scheduled_time: updatedTask.scheduled_time,
                 priority: updatedTask.priority,
               });
+
+              // Update in Google Calendar if synced
+              if (
+                settings.syncWithGoogleCalendar &&
+                isSignedIn &&
+                hasGoogleConnected() &&
+                task.gcalEventId
+              ) {
+                updateEvent(finalTask, task.gcalEventId);
+              }
+
+              return finalTask;
             }
             return task;
           })
@@ -205,7 +257,14 @@ export default function Task({
         console.error("Failed to update task:", error);
       }
     },
-    [setTasks, cancelEditing]
+    [
+      setTasks,
+      cancelEditing,
+      settings,
+      isSignedIn,
+      hasGoogleConnected,
+      updateEvent,
+    ]
   );
 
   const handleDateSelect = useCallback(

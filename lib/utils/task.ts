@@ -20,6 +20,15 @@ export const serializeTask = (task: TaskItem): TaskItem => {
   // Always update updated_at
   result.updated_at = now;
 
+  // Preserve Google Calendar sync fields
+  if (task.gcalEventId) {
+    result.gcalEventId = task.gcalEventId;
+  }
+
+  if (task.syncedWithGCal !== undefined) {
+    result.syncedWithGCal = task.syncedWithGCal;
+  }
+
   return result;
 };
 

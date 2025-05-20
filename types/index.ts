@@ -7,6 +7,8 @@ export interface TaskItem {
   updated_at?: Date;
   scheduled_time?: string;
   priority?: "high" | "medium" | "low";
+  gcalEventId?: string;
+  syncedWithGCal?: boolean;
 }
 
 export type SortOption =
@@ -15,7 +17,6 @@ export type SortOption =
   | "alphabetical"
   | "completed"
   | "priority";
-
 
 export interface TaskListProps {
   tasks: TaskItem[];

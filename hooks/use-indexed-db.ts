@@ -25,6 +25,8 @@ const TaskItemSchema = z.object({
     .optional(),
   scheduled_time: z.string().optional(),
   priority: z.enum(["high", "medium", "low"]).optional(),
+  gcalEventId: z.string().optional(),
+  syncedWithGCal: z.boolean().optional(),
 });
 
 const TaskArraySchema = z.array(TaskItemSchema);
@@ -38,6 +40,13 @@ class AppDatabase extends Dexie {
       tasks:
         "id, text, completed, date, created_at, updated_at, scheduled_time, priority",
     });
+
+    // Version 2: Added Google Calendar sync fields
+    this.version(2).stores({
+      tasks:
+        "id, text, completed, date, created_at, updated_at, scheduled_time, priority, gcalEventId, syncedWithGCal",
+    });
+
     this.tasks = this.table("tasks");
   }
 }

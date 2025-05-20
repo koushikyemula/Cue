@@ -1,5 +1,6 @@
 import { OfflineBanner } from "@/components/offline-banner";
 import { Providers } from "@/components/providers";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   description:
     "Cue - A sleek, minimalist task manager that helps you focus on what matters.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://cuedot.tech"
+    process.env.NEXT_PUBLIC_APP_URL || "https://cuedot.tech",
   ),
   manifest: "/manifest.json",
   appleWebApp: {
@@ -55,14 +56,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
-        suppressHydrationWarning
-      >
-        <OfflineBanner />
-        <Providers>{children}</Providers>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className="h-full" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} dark:bg-neutral-900 antialiased h-full`}
+          suppressHydrationWarning
+        >
+          <OfflineBanner />
+          <Providers>{children}</Providers>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

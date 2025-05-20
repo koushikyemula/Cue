@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/task";
 import { TaskItem } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, ExternalLink, Pencil, X } from "lucide-react";
+import { Clock, ExternalLink, Pencil, X, Calendar } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 const PriorityIndicator = memo(
@@ -249,6 +249,23 @@ const TextWithLinks = memo(
 );
 TextWithLinks.displayName = "TextWithLinks";
 
+// Add a new component for Google Calendar sync indicator
+const GCalSyncIndicator = memo(({ synced }: { synced?: boolean }) => {
+  if (!synced) return null;
+
+  return (
+    <motion.div
+      layout="position"
+      className="text-xs text-green-400 flex items-center gap-1 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-sm"
+      title="Synced with Google Calendar"
+    >
+      <Calendar className="w-3 h-3" />
+      <span>synced</span>
+    </motion.div>
+  );
+});
+GCalSyncIndicator.displayName = "GCalSyncIndicator";
+
 interface TaskListProps {
   tasks: TaskItem[];
   onToggle: (id: string) => void;
@@ -426,6 +443,7 @@ export function TaskList({
                           <span>pending</span>
                         </span>
                       )}
+                      <GCalSyncIndicator synced={task.syncedWithGCal} />
                     </motion.div>
                   </motion.div>
 
