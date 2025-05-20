@@ -422,7 +422,7 @@ function HomePage() {
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[240px] p-0 border-border/40 bg-neutral-800/90 dark:bg-neutral-800/90 shadow-md"
+            className="w-[240px] p-0 border-border/40 bg-neutral-800 dark:bg-neutral-800 shadow-md"
             align="end"
             sideOffset={8}
           >

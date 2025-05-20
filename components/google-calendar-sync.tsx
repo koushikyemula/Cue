@@ -16,8 +16,13 @@ const GoogleCalendarSync: FC = () => {
 
     try {
       setIsLoading(true);
+      const isProduction = process.env.NODE_ENV !== "development";
+      const redirectUrl = !isProduction
+        ? "https://just-deer-14.clerk.accounts.dev/v1/oauth_callback"
+        : "https://clerk.cuedot.tech/v1/oauth_callback";
+
       window.location.href = `https://accounts.clerk.dev/oauth_connect?provider=oauth_google&redirect_url=${encodeURIComponent(
-        "https://just-deer-14.clerk.accounts.dev/v1/oauth_callback"
+        redirectUrl
       )}`;
     } catch (error) {
       console.error("Failed to connect Google Calendar:", error);
