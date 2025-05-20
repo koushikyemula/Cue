@@ -165,19 +165,7 @@ export default function Task({
       setTasks((prevTasks) => {
         const newTasks = prevTasks.map((task) => {
           if (task.id === id) {
-            const updatedTask = { ...task, completed: !task.completed };
-
-            // Update in Google Calendar if synced
-            if (
-              settings.syncWithGoogleCalendar &&
-              isSignedIn &&
-              hasGoogleConnected() &&
-              task.gcalEventId
-            ) {
-              updateEvent(updatedTask, task.gcalEventId);
-            }
-
-            return updatedTask;
+            return { ...task, completed: !task.completed };
           }
           return task;
         });
@@ -185,7 +173,7 @@ export default function Task({
         return newTasks;
       });
     },
-    [setTasks, settings, isSignedIn, hasGoogleConnected, updateEvent]
+    [setTasks]
   );
 
   const deleteTask = useCallback(
@@ -237,12 +225,14 @@ export default function Task({
                 priority: updatedTask.priority,
               });
 
-              // Update in Google Calendar if synced
               if (
                 settings.syncWithGoogleCalendar &&
                 isSignedIn &&
                 hasGoogleConnected() &&
-                task.gcalEventId
+                task.gcalEventId &&
+                (task.text !== updatedTask.text ||
+                  task.scheduled_time !== updatedTask.scheduled_time ||
+                  task.priority !== updatedTask.priority)
               ) {
                 updateEvent(finalTask, task.gcalEventId);
               }
