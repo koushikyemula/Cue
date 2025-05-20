@@ -171,17 +171,7 @@ function HomePage() {
                         ? false
                         : !task.completed;
 
-                    const updatedTask = { ...task, completed };
-
-                    // Update task in Google Calendar if synced
-                    if (
-                      task.gcalEventId &&
-                      userSettings.syncWithGoogleCalendar
-                    ) {
-                      updateEvent(updatedTask, task.gcalEventId);
-                    }
-
-                    return updatedTask;
+                    return { ...task, completed };
                   }
                   return task;
                 });
@@ -231,13 +221,23 @@ function HomePage() {
             case "clear":
               if (action.listToClear) {
                 const dateStr = format(selectedDate, "yyyy-MM-dd");
+                let tasksToRemove: TaskItem[] = [];
+
                 switch (action.listToClear) {
                   case "all":
+                    tasksToRemove = tasks.filter(
+                      (task) => format(task.date, "yyyy-MM-dd") === dateStr
+                    );
                     newTasks = tasks.filter(
                       (task) => format(task.date, "yyyy-MM-dd") !== dateStr
                     );
                     break;
                   case "completed":
+                    tasksToRemove = tasks.filter(
+                      (task) =>
+                        task.completed &&
+                        format(task.date, "yyyy-MM-dd") === dateStr
+                    );
                     newTasks = tasks.filter(
                       (task) =>
                         !(
@@ -247,6 +247,11 @@ function HomePage() {
                     );
                     break;
                   case "incomplete":
+                    tasksToRemove = tasks.filter(
+                      (task) =>
+                        !task.completed &&
+                        format(task.date, "yyyy-MM-dd") === dateStr
+                    );
                     newTasks = tasks.filter(
                       (task) =>
                         !(
@@ -255,6 +260,15 @@ function HomePage() {
                         )
                     );
                     break;
+                }
+
+                // Delete Google Calendar events for removed tasks
+                if (userSettings.syncWithGoogleCalendar) {
+                  for (const task of tasksToRemove) {
+                    if (task.gcalEventId) {
+                      await deleteEvent(task.gcalEventId);
+                    }
+                  }
                 }
               }
               break;
@@ -389,15 +403,15 @@ function HomePage() {
   );
 
   return (
-    <main className="h-full w-full flex flex-col mx-auto bg-neutral-900">
-      <div className="fixed top-5 right-5 z-40 flex gap-2">
+    <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
+      <div className="fixed z-40 flex gap-2 top-5 right-5">
         <Popover open={syncOpen} onOpenChange={setSyncOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               size="sm"
               data-sync-trigger
-              className="h-9 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
+              className="px-2 bg-transparent border-0 shadow-none h-9 hover:cursor-pointer hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
             >
               <ArrowsClockwise
                 className={cn(
@@ -415,16 +429,16 @@ function HomePage() {
             <div className="flex flex-col">
               <div className="px-3 pt-3 pb-2">
                 <h3 className="text-sm font-medium">Data Sync</h3>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Backup or restore your tasks
                 </p>
               </div>
-              <div className="border-t px-1 py-1">
+              <div className="px-1 py-1 border-t">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleExport}
-                  className="w-full justify-start text-xs hover:cursor-pointer h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
+                  className="justify-start w-full h-8 gap-2 px-2 text-xs font-normal hover:cursor-pointer text-neutral-300 hover:text-foreground hover:bg-accent/30"
                 >
                   <FileArrowUp weight="light" className="size-4" />
                   Export tasks as JSON
@@ -433,7 +447,7 @@ function HomePage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start hover:cursor-pointer text-xs h-8 gap-2 px-2 font-normal text-neutral-300 hover:text-foreground hover:bg-accent/30"
+                    className="justify-start w-full h-8 gap-2 px-2 text-xs font-normal hover:cursor-pointer text-neutral-300 hover:text-foreground hover:bg-accent/30"
                   >
                     <FileArrowDown weight="light" className="size-4" />
                     Import from JSON file
@@ -463,18 +477,47 @@ function HomePage() {
             if (typeof updatedTasks === "function") {
               setTasks((prevTasks) => {
                 const newTasks = updatedTasks(prevTasks);
+
                 // Auto-remove completed tasks if the setting is enabled
-                return userSettings.autoRemoveCompleted
-                  ? newTasks.filter((task) => !task.completed)
-                  : newTasks;
+                if (userSettings.autoRemoveCompleted) {
+                  const tasksToRemove = newTasks.filter(
+                    (task) => task.completed
+                  );
+
+                  // Delete associated Google Calendar events
+                  if (userSettings.syncWithGoogleCalendar) {
+                    tasksToRemove.forEach((task) => {
+                      if (task.gcalEventId) {
+                        deleteEvent(task.gcalEventId);
+                      }
+                    });
+                  }
+
+                  return newTasks.filter((task) => !task.completed);
+                } else {
+                  return newTasks;
+                }
               });
             } else {
               // If it's a direct value update, apply autoRemoveCompleted directly
-              setTasks(
-                userSettings.autoRemoveCompleted
-                  ? updatedTasks.filter((task) => !task.completed)
-                  : updatedTasks
-              );
+              if (userSettings.autoRemoveCompleted) {
+                const tasksToRemove = updatedTasks.filter(
+                  (task) => task.completed
+                );
+
+                // Delete associated Google Calendar events
+                if (userSettings.syncWithGoogleCalendar) {
+                  tasksToRemove.forEach((task) => {
+                    if (task.gcalEventId) {
+                      deleteEvent(task.gcalEventId);
+                    }
+                  });
+                }
+
+                setTasks(updatedTasks.filter((task) => !task.completed));
+              } else {
+                setTasks(updatedTasks);
+              }
             }
           }}
           sortBy={sortBy}
@@ -487,14 +530,14 @@ function HomePage() {
       <AnimatePresence>
         {(isInputVisible || isMobile) && (
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-neutral-900 shadow-lg z-50"
+            className="fixed bottom-0 left-0 right-0 z-50 shadow-lg bg-neutral-900"
             ref={inputRef}
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
           >
-            <div className="max-w-md mx-auto pb-6">
+            <div className="max-w-md pb-6 mx-auto">
               <AiInput
                 placeholder={"What's next?"}
                 minHeight={50}
@@ -508,10 +551,10 @@ function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <footer className="w-full py-3 text-center text-xs text-neutral-500 dark:text-neutral-600 mt-auto">
+      <footer className="w-full py-3 mt-auto text-xs text-center text-neutral-500 dark:text-neutral-600">
         <Link
           href="/privacy-policy"
-          className="hover:text-neutral-400 transition-colors"
+          className="transition-colors hover:text-neutral-400"
         >
           Privacy Policy
         </Link>
