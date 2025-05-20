@@ -2,10 +2,7 @@ import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist } from "serwist";
 
-// This declares the value of `injectionPoint` to TypeScript.
-// `injectionPoint` is the string that will be replaced by the
-// actual precache manifest. By default, this string is set to
-// `"self.__SW_MANIFEST"`.
+// Type declarations for service worker manifest
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
@@ -13,6 +10,10 @@ declare global {
 }
 
 declare const self: ServiceWorkerGlobalScope;
+
+// Cache version
+const CACHE_VERSION = "v1";
+const APP_SHELL_CACHE = `app-shell-${CACHE_VERSION}`;
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
@@ -32,18 +33,53 @@ const serwist = new Serwist({
   },
 });
 
-// Add event listeners for the service worker lifecycle
 serwist.addEventListeners();
 
-// Add a handler for install events to ensure the app works offline from the start
 self.addEventListener("install", (event) => {
+  console.log("[Service Worker] Installing");
+
   event.waitUntil(
-    caches.open("app-shell").then((cache) => {
+    caches.open(APP_SHELL_CACHE).then((cache) => {
+      console.log("[Service Worker] Caching app shell");
       return cache.addAll([
         "/",
-        "/icons/icon-192-192.png",
-        "/icons/icon-512-512.png",
+        "/offline",
+        "/icons/icon-72x72.png",
+        "/icons/icon-96x96.png",
+        "/icons/icon-144x144.png",
+        "/icons/icon-192x192.png",
+        "/icons/icon-512x512.png",
       ]);
-    })
+    }),
   );
+});
+
+self.addEventListener("activate", (event) => {
+  console.log("[Service Worker] Activating");
+
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((cacheName) => {
+            return (
+              cacheName.startsWith("app-shell-") &&
+              cacheName !== APP_SHELL_CACHE
+            );
+          })
+          .map((cacheName) => {
+            console.log("[Service Worker] Deleting old cache:", cacheName);
+            return caches.delete(cacheName);
+          }),
+      );
+    }),
+  );
+});
+
+self.addEventListener("install", () => {
+  console.log("[Service Worker] Installed");
+});
+
+self.addEventListener("activate", () => {
+  console.log("[Service Worker] Activated");
 });

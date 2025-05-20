@@ -3,14 +3,17 @@
   "name": "Cue",
   "short_name": "Cue",
   "description": "Cue - A sleek, minimalist task manager that helps you focus on what matters.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#0A0A0A",
   "theme_color": "#0A0A0A",
   "orientation": "portrait",
   "dir": "ltr",
   "lang": "en",
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "icons/icon-72x72.png",
@@ -22,7 +25,6 @@
       "sizes": "96x96",
       "type": "image/png"
     },
-
     {
       "src": "icons/icon-144x144.png",
       "sizes": "144x144",
@@ -36,7 +38,20 @@
     {
       "src": "icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "prefer_related_applications": false,
@@ -48,5 +63,16 @@
     }
   ],
   "scope": "/",
-  "display_override": ["standalone", "window-controls-overlay"]
+  "display_override": [
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "related_applications": [],
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  }
 }
