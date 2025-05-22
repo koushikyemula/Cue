@@ -551,14 +551,23 @@ function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <footer className="w-full py-3 mt-auto text-xs text-center text-neutral-500 dark:text-neutral-600">
-        <Link
-          href="/privacy-policy"
-          className="transition-colors hover:text-neutral-400"
-        >
-          Privacy Policy
-        </Link>
-      </footer>
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] text-center">
+        <div className="flex items-center justify-center gap-4">
+          <Link
+            href="/privacy-policy"
+            className="text-neutral-400 text-xs hover:text-white transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <span className="text-neutral-600">•</span>
+          <Link
+            href="https://github.com/koushikyemula/cue"
+            className="text-neutral-400 text-xs hover:text-white transition-colors"
+          >
+            GitHub
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }
