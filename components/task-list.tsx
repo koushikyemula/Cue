@@ -333,7 +333,6 @@ export function TaskList({
             !task.completed &&
             task.date &&
             isDateBeforeToday(task.date);
-
           return (
             <motion.div
               key={task.id}

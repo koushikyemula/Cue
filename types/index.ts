@@ -7,6 +7,7 @@ export interface TaskItem {
   updated_at?: Date;
   scheduled_time?: string;
   priority?: "high" | "medium" | "low";
+  comment?: string;
   gcalEventId?: string;
   syncedWithGCal?: boolean;
 }

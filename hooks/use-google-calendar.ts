@@ -82,7 +82,14 @@ export function useGoogleCalendar() {
     const endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 1);
 
-    const description = task.priority ? `Priority: ${task.priority}` : "";
+    const descriptionParts = [];
+    if (task.priority) {
+      descriptionParts.push(`Priority: ${task.priority}`);
+    }
+    if (task.comment) {
+      descriptionParts.push(task.comment);
+    }
+    const description = descriptionParts.join("\n\n");
 
     return {
       summary: task.text,

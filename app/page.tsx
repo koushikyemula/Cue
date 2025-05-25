@@ -6,32 +6,18 @@ import {
   type UserSettings,
   defaultSettings,
 } from "@/components/settings-popover";
+import { SyncPopover } from "@/components/sync-popover";
 import Task from "@/components/task";
 import AiInput from "@/components/ui/ai-input";
-import { Button } from "@/components/ui/button";
-import { FileInput } from "@/components/ui/file-input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { useIndexedDB, useMediaQuery, useGoogleCalendar } from "@/hooks";
-import { cn } from "@/lib/utils";
+import { useGoogleCalendar, useIndexedDB, useMediaQuery } from "@/hooks";
 import { serializeTask } from "@/lib/utils/task";
 import type { SortOption, TaskItem } from "@/types";
-import {
-  ArrowsClockwise,
-  FileArrowDown,
-  FileArrowUp,
-} from "@phosphor-icons/react";
 import { format } from "date-fns";
-import { AnimatePresence } from "framer-motion";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
-import Link from "next/link";
-import GoogleCalendarSync from "@/components/google-calendar-sync";
 
 function HomePage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -405,61 +391,28 @@ function HomePage() {
   return (
     <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
       <div className="fixed z-40 flex gap-2 top-5 right-5">
-        <Popover open={syncOpen} onOpenChange={setSyncOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              data-sync-trigger
-              className="px-2 bg-transparent border-0 shadow-none h-9 hover:cursor-pointer hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
-            >
-              <ArrowsClockwise
-                className={cn(
-                  "h-4 w-4 transition-transform duration-200",
-                  syncOpen && "rotate-90"
-                )}
-              />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-[240px] p-0 border-border/40 bg-neutral-800 dark:bg-neutral-800 shadow-md"
-            align="end"
-            sideOffset={8}
+        <Link
+          href="/calendar"
+          className="px-2 bg-transparent border-0 shadow-none h-9 hover:cursor-pointer hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground flex items-center justify-center border-transparent text-sm font-medium transition-colors"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <div className="flex flex-col">
-              <div className="px-3 pt-3 pb-2">
-                <h3 className="text-sm font-medium">Data Sync</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Backup or restore your tasks
-                </p>
-              </div>
-              <div className="px-1 py-1 border-t">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExport}
-                  className="justify-start w-full h-8 gap-2 px-2 text-xs font-normal hover:cursor-pointer text-neutral-300 hover:text-foreground hover:bg-accent/30"
-                >
-                  <FileArrowUp weight="light" className="size-4" />
-                  Export tasks as JSON
-                </Button>
-                <FileInput onFileSelect={handleImport} accept=".json">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="justify-start w-full h-8 gap-2 px-2 text-xs font-normal hover:cursor-pointer text-neutral-300 hover:text-foreground hover:bg-accent/30"
-                  >
-                    <FileArrowDown weight="light" className="size-4" />
-                    Import from JSON file
-                  </Button>
-                </FileInput>
-              </div>
-              <div className="border-t px-3 py-2.5">
-                <GoogleCalendarSync />
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </Link>
+        <SyncPopover
+          syncOpen={syncOpen}
+          setSyncOpen={setSyncOpen}
+          handleExport={handleExport}
+          handleImport={handleImport}
+        />
         <SettingsPopover
           onSettingsChange={handleSettingsChange}
           isMobile={isMobile}

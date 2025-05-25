@@ -20,7 +20,6 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { cn } from "@/lib/utils";
 import { SortOption } from "@/types";
 import { ListRestart, Settings } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -49,14 +48,16 @@ export const defaultSettings: UserSettings = {
 export function SettingsPopover({
   onSettingsChange,
   isMobile,
+  className,
 }: {
   onSettingsChange: (settings: UserSettings) => void;
   isMobile: boolean;
+  className?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useLocalStorage<UserSettings>(
     "user-settings",
-    defaultSettings,
+    defaultSettings
   );
 
   // Ensure any new default settings are applied to existing saved settings
@@ -80,7 +81,7 @@ export function SettingsPopover({
         [setting]: checked,
       });
     },
-    [settings, setSettings],
+    [settings, setSettings]
   );
 
   const handleSelectChange = useCallback(
@@ -91,7 +92,7 @@ export function SettingsPopover({
           setting === "defaultPriority" && value === "none" ? undefined : value,
       });
     },
-    [settings, setSettings],
+    [settings, setSettings]
   );
 
   const handleResetSettings = useCallback(() => {
@@ -105,7 +106,7 @@ export function SettingsPopover({
 
   const isDefaultSettings = useMemo(
     () => JSON.stringify(settings) === JSON.stringify(defaultSettings),
-    [settings],
+    [settings]
   );
 
   const { hasGoogleConnected } = useGoogleCalendar();
@@ -116,12 +117,15 @@ export function SettingsPopover({
         <Button
           variant="outline"
           size="sm"
-          className="h-9 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground"
+          className={cn(
+            "h-9 px-2 border-0 hover:cursor-pointer shadow-none bg-transparent hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground",
+            className
+          )}
         >
           <Settings
             className={cn(
               "h-4 w-4 transition-transform duration-200",
-              isOpen && "rotate-90",
+              isOpen && "rotate-90"
             )}
           />
         </Button>
@@ -131,7 +135,7 @@ export function SettingsPopover({
           <div
             className={cn(
               "flex items-center justify-between",
-              isDefaultSettings && "py-1.5",
+              isDefaultSettings && "py-1.5"
             )}
           >
             <h4 className="font-medium text-base leading-none">Settings</h4>
@@ -142,7 +146,7 @@ export function SettingsPopover({
               onClick={handleResetSettings}
               className={cn(
                 "h-7 w-7 hover:bg-accent/40 cursor-pointer flex border-0 text-muted-foreground hover:text-foreground transition-colors",
-                isDefaultSettings && "hidden",
+                isDefaultSettings && "hidden"
               )}
             >
               <ListRestart className="h-3.5 w-3.5" />
