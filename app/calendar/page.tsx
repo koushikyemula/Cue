@@ -19,6 +19,8 @@ import type { TaskItem } from "@/types";
 import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react";
 import {
   add,
+  addDays,
+  addMonths,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -133,6 +135,32 @@ function CalendarPage() {
     e.preventDefault();
     setIsInputVisible((prev) => !prev);
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey) {
+        if (e.key === "[" || e.code === "BracketLeft") {
+          e.preventDefault();
+          setCurrentMonth(
+            format(addMonths(firstDayCurrentMonth, -1), "MMM-yyyy")
+          );
+        }
+
+        if (e.key === "]" || e.code === "BracketRight") {
+          e.preventDefault();
+          setCurrentMonth(
+            format(addMonths(firstDayCurrentMonth, 1), "MMM-yyyy")
+          );
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setCurrentMonth, firstDayCurrentMonth]);
 
   const handleClose = useCallback(() => setIsInputVisible(false), []);
 
