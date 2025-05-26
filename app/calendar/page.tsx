@@ -11,6 +11,7 @@ import { TaskContextMenu } from "@/components/task-context-menu";
 import { TaskDialog } from "@/components/task-dialog";
 import AiInput from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
+import { formatTimeDisplay } from "@/components/ui/time-picker";
 import { useGoogleCalendar, useIndexedDB, useMediaQuery } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { serializeTask } from "@/lib/utils/task";
@@ -112,7 +113,9 @@ function CalendarPage() {
       .map((task) => ({
         id: task.id,
         name: task.text,
-        time: task.scheduled_time || "All day",
+        time: task.scheduled_time
+          ? formatTimeDisplay(task.scheduled_time)
+          : "All day",
         datetime: format(task.date, "yyyy-MM-dd"),
         priority: task.priority,
       })),
@@ -291,7 +294,6 @@ function CalendarPage() {
               newTask.syncedWithGCal = true;
             }
           }
-
           setTasks([...tasks, newTask]);
           toast.success("Task created", { duration: 2000 });
           onComplete?.();
@@ -492,14 +494,18 @@ function CalendarPage() {
               <CaretRight size={16} />
             </Button>
           </div>
-
           <Button
             onClick={() => setIsInputVisible(true)}
-            variant="secondary"
-            className="gap-2 cursor-pointer"
+            variant="outline"
+            className="gap-2 cursor-pointer bg-neutral-800/50 hover:bg-neutral-700/50 border-neutral-700/50 text-neutral-200 transition-colors"
           >
-            <Plus size={16} />
-            <span>New Task</span>
+            <Plus size={16} weight="bold" className="text-neutral-300" />
+            <span className="flex items-center gap-1.5 -mr-1">
+              New Task
+              <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 bg-neutral-900/50 border border-neutral-700/50 rounded">
+                ⌘K
+              </kbd>
+            </span>
           </Button>
           <div className="flex gap-2">
             <SyncPopover
@@ -549,12 +555,12 @@ function CalendarPage() {
                   dayIdx === 0 && colStartClasses[getDay(day)],
                   !isSameMonth(day, firstDayCurrentMonth) &&
                     "bg-neutral-900/50 text-neutral-600",
-                  "relative flex flex-col border-b border-r border-neutral-800/40 hover:bg-neutral-800/30 cursor-pointer transition-colors min-h-[120px]",
+                  "relative flex flex-col border-b border-r border-neutral-800/40 hover:bg-neutral-800/30 cursor-pointer transition-colors h-full max-h-[160px] overflow-hidden",
                   isEqual(day, selectedDay) &&
                     "bg-neutral-800/50 ring-1 ring-neutral-700"
                 )}
               >
-                <header className="flex items-center justify-between p-2">
+                <header className="flex items-center justify-between p-2 pb-1">
                   <button
                     type="button"
                     className={cn(
@@ -581,7 +587,7 @@ function CalendarPage() {
                   </button>
                 </header>
 
-                <div className="flex-1 p-2 space-y-1">
+                <div className="flex-1 px-2 pt-0 space-y-1">
                   {dayEvents.slice(0, 3).map((event) => {
                     const task = tasks.find((t) => t.id === event.id);
                     if (!task) return null;
@@ -637,7 +643,7 @@ function CalendarPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm"
             onClick={handleClose}
           >
             <div
@@ -650,7 +656,9 @@ function CalendarPage() {
                   "MMM d, yyyy"
                 )}...`}
                 minHeight={48}
-                onSubmit={handleSubmit}
+                onSubmit={(text) =>
+                  handleSubmit(text, () => setIsInputVisible(false))
+                }
                 onClose={handleClose}
                 isMobile={isMobile}
                 aiDisabled={!userSettings.aiEnabled}
