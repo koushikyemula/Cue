@@ -1,25 +1,20 @@
 "use client";
 
-import { determineAction } from "@/app/actions";
-import {
-  SettingsPopover,
-  type UserSettings,
-  defaultSettings,
-} from "@/components/settings-popover";
-import { SyncPopover } from "@/components/sync-popover";
+import { SettingsPopover } from "@/components/settings-button";
+import { SyncPopover } from "@/components/sync-button";
 import { TaskContextMenu } from "@/components/task-context-menu";
 import { TaskDialog } from "@/components/task-dialog";
 import AiInput from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
 import { formatTimeDisplay } from "@/components/ui/time-picker";
-import { useGoogleCalendar, useIndexedDB, useMediaQuery } from "@/hooks";
+import { useGoogleCalendar, useMediaQuery } from "@/hooks";
 import { cn } from "@/lib/utils";
-import { serializeTask } from "@/lib/utils/task";
+import { useSettingsStore } from "@/stores/settings-store";
+import { useTaskStoreWithPersistence } from "@/stores/task-store";
 import type { TaskItem } from "@/types";
 import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react";
 import {
   add,
-  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
@@ -37,7 +32,6 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { toast } from "sonner";
 
 interface CalendarEvent {
   id: string;
@@ -77,14 +71,6 @@ export const getPriorityColor = (priority?: string) => {
 
 function CalendarPage() {
   const [isInputVisible, setIsInputVisible] = useState(false);
-  const [tasks, setTasks, exportData, importData] = useIndexedDB<TaskItem[]>(
-    "tasks",
-    []
-  );
-  const [syncOpen, setSyncOpen] = useState(false);
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  const [userSettings, setUserSettings] =
-    useState<UserSettings>(defaultSettings);
   const [selectedDay, setSelectedDay] = useState(startOfToday());
   const [currentMonth, setCurrentMonth] = useState(
     format(startOfToday(), "MMM-yyyy")
@@ -92,6 +78,10 @@ function CalendarPage() {
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
 
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const { tasks, updateTask, deleteTask, toggleTask, processAIActions } =
+    useTaskStoreWithPersistence();
+  const { settings } = useSettingsStore();
   const {
     isSignedIn,
     hasGoogleConnected,
@@ -123,14 +113,6 @@ function CalendarPage() {
       })),
   }));
 
-  useEffect(() => {
-    if (userSettings.defaultAIInputOpen) {
-      setIsInputVisible(true);
-    } else if (!isMobile) {
-      setIsInputVisible(false);
-    }
-  }, [userSettings.defaultAIInputOpen, isMobile]);
-
   useHotkeys("meta+k, ctrl+k", (e) => {
     e.preventDefault();
     setIsInputVisible((prev) => !prev);
@@ -156,239 +138,28 @@ function CalendarPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [firstDayCurrentMonth]);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [setCurrentMonth, firstDayCurrentMonth]);
+  const handleClose = () => setIsInputVisible(false);
 
-  const handleClose = useCallback(() => setIsInputVisible(false), []);
+  const handleSubmit = async (text: string, onComplete?: () => void) => {
+    if (!text.trim()) return;
 
-  const handleSettingsChange = useCallback((settings: UserSettings) => {
-    setUserSettings(settings);
-  }, []);
-
-  const handleExport = useCallback(async () => {
     try {
-      const result = await exportData();
-      toast.success(result.message);
-    } catch (error) {
-      toast.error("Failed to export data", {
-        description: error instanceof Error ? error.message : "Unknown error",
+      await processAIActions(text, selectedDay, settings, {
+        isSignedIn,
+        hasGoogleConnected,
+        createEvent,
+        updateEvent,
+        deleteEvent,
       });
-    } finally {
-      setSyncOpen(false);
+      onComplete?.();
+    } catch (error) {
+      console.error("Failed to process task input:", error);
+      onComplete?.();
     }
-  }, [exportData]);
-
-  const handleImport = useCallback(
-    async (file: File) => {
-      try {
-        const result = await importData(file);
-        toast.success(result.message);
-      } catch (error) {
-        toast.error("Failed to import data", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
-      } finally {
-        setSyncOpen(false);
-      }
-    },
-    [importData]
-  );
-
-  const processActions = useCallback(
-    async (actions: any[], text: string, selectedDate: Date) => {
-      let newTasks = [...tasks];
-
-      await Promise.all(
-        actions.map(async (action) => {
-          switch (action.action) {
-            case "add": {
-              let taskDate = selectedDate;
-              if (action.targetDate) {
-                taskDate = new Date(action.targetDate);
-              }
-              const newTask = serializeTask({
-                id: Math.random().toString(36).substring(7),
-                text: action.text || text,
-                completed: false,
-                date: taskDate,
-                scheduled_time: action.scheduled_time,
-                priority: action.priority || userSettings.defaultPriority,
-              });
-
-              if (
-                userSettings.syncWithGoogleCalendar &&
-                isSignedIn &&
-                hasGoogleConnected()
-              ) {
-                const eventId = await createEvent(newTask);
-                if (eventId) {
-                  newTask.gcalEventId = eventId;
-                  newTask.syncedWithGCal = true;
-                }
-              }
-
-              newTasks.push(newTask);
-              break;
-            }
-            case "delete":
-              if (action.taskId) {
-                const taskToDelete = newTasks.find(
-                  (task) => task.id === action.taskId
-                );
-                if (
-                  taskToDelete &&
-                  taskToDelete.gcalEventId &&
-                  userSettings.syncWithGoogleCalendar
-                ) {
-                  await deleteEvent(taskToDelete.gcalEventId);
-                }
-                newTasks = newTasks.filter((task) => task.id !== action.taskId);
-              }
-              break;
-            case "edit":
-              if (action.taskId) {
-                newTasks = newTasks.map((task) => {
-                  if (task.id === action.taskId) {
-                    const updatedTask = serializeTask({
-                      ...task,
-                      text: action.text || task.text,
-                      date: action.targetDate
-                        ? new Date(action.targetDate)
-                        : task.date,
-                      scheduled_time:
-                        action.scheduled_time || task.scheduled_time,
-                      priority:
-                        action.priority !== undefined
-                          ? action.priority
-                          : task.priority,
-                    });
-
-                    if (
-                      task.gcalEventId &&
-                      userSettings.syncWithGoogleCalendar
-                    ) {
-                      updateEvent(updatedTask, task.gcalEventId);
-                    }
-
-                    return updatedTask;
-                  }
-                  return task;
-                });
-              }
-              break;
-          }
-        })
-      );
-
-      return newTasks;
-    },
-    [
-      tasks,
-      userSettings.defaultPriority,
-      isSignedIn,
-      hasGoogleConnected,
-      createEvent,
-      updateEvent,
-      deleteEvent,
-      userSettings,
-    ]
-  );
-
-  const handleSubmit = useCallback(
-    async (text: string, onComplete?: () => void) => {
-      if (!text.trim()) return;
-
-      try {
-        if (!userSettings.aiEnabled) {
-          const newTask = serializeTask({
-            id: Math.random().toString(36).substring(7),
-            text,
-            completed: false,
-            date: selectedDay,
-            priority: userSettings.defaultPriority,
-          });
-
-          if (
-            userSettings.syncWithGoogleCalendar &&
-            isSignedIn &&
-            hasGoogleConnected()
-          ) {
-            const eventId = await createEvent(newTask);
-            if (eventId) {
-              newTask.gcalEventId = eventId;
-              newTask.syncedWithGCal = true;
-            }
-          }
-          setTasks([...tasks, newTask]);
-          toast.success("Task created", { duration: 2000 });
-          onComplete?.();
-          return;
-        }
-
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const { actions } = await determineAction(
-          text,
-          tasks,
-          "llama-3.3",
-          timezone
-        );
-        const newTasks = await processActions(actions, text, selectedDay);
-        setTasks(newTasks);
-
-        if (actions.length > 0) {
-          actions.forEach((action) => {
-            if (action.action === "add") {
-              toast.success("Task created", {
-                description: action.text || text,
-                duration: 2000,
-              });
-            }
-          });
-        }
-        onComplete?.();
-      } catch (error) {
-        console.error("AI Action failed:", error);
-        const newTask = serializeTask({
-          id: Math.random().toString(36).substring(7),
-          text,
-          completed: false,
-          date: selectedDay,
-          priority: userSettings.defaultPriority,
-        });
-
-        if (
-          userSettings.syncWithGoogleCalendar &&
-          isSignedIn &&
-          hasGoogleConnected()
-        ) {
-          const eventId = await createEvent(newTask);
-          if (eventId) {
-            newTask.gcalEventId = eventId;
-            newTask.syncedWithGCal = true;
-          }
-        }
-
-        setTasks([...tasks, newTask]);
-        toast.success("Task created", { duration: 2000 });
-        onComplete?.();
-      }
-    },
-    [
-      tasks,
-      processActions,
-      setTasks,
-      userSettings.defaultPriority,
-      userSettings.aiEnabled,
-      userSettings.syncWithGoogleCalendar,
-      isSignedIn,
-      hasGoogleConnected,
-      createEvent,
-      selectedDay,
-    ]
-  );
+  };
 
   function previousMonth() {
     const firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 });
@@ -405,79 +176,91 @@ function CalendarPage() {
     setSelectedDay(today);
   }
 
-  const handleTaskClick = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (task) {
-      setSelectedTask(task);
-      setTaskDialogOpen(true);
-    }
-  };
+  const handleTaskClick = useCallback(
+    (taskId: string) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (task) {
+        setSelectedTask(task);
+        setTaskDialogOpen(true);
+      }
+    },
+    [tasks]
+  );
 
-  const handleTaskSave = async (updatedTask: TaskItem) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === updatedTask.id) {
-          const finalTask = { ...updatedTask, updated_at: new Date() };
+  const handleTaskSave = useCallback(
+    async (updatedTask: TaskItem) => {
+      await updateTask(updatedTask.id, {
+        ...updatedTask,
+        updated_at: new Date(),
+      });
+    },
+    [updateTask]
+  );
 
-          // Update Google Calendar if synced
-          if (
-            task.gcalEventId &&
-            userSettings.syncWithGoogleCalendar &&
-            isSignedIn &&
-            hasGoogleConnected()
-          ) {
-            updateEvent(finalTask, task.gcalEventId);
-          }
+  const handleTaskDelete = useCallback(
+    async (taskId: string) => {
+      const taskToDelete = tasks.find((task) => task.id === taskId);
 
-          return finalTask;
+      // Delete from Google Calendar if synced
+      if (
+        taskToDelete?.gcalEventId &&
+        settings.syncWithGoogleCalendar &&
+        isSignedIn &&
+        hasGoogleConnected()
+      ) {
+        await deleteEvent(taskToDelete.gcalEventId);
+      }
+
+      await deleteTask(taskId);
+    },
+    [
+      tasks,
+      settings.syncWithGoogleCalendar,
+      isSignedIn,
+      hasGoogleConnected,
+      deleteEvent,
+      deleteTask,
+    ]
+  );
+
+  const handleTaskToggleComplete = useCallback(
+    async (taskId: string) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      if (settings.autoRemoveCompleted && !task.completed) {
+        await handleTaskDelete(taskId);
+      } else {
+        const updatedTask = {
+          ...task,
+          completed: !task.completed,
+          updated_at: new Date(),
+        };
+
+        // Update Google Calendar if synced
+        if (
+          task.gcalEventId &&
+          settings.syncWithGoogleCalendar &&
+          isSignedIn &&
+          hasGoogleConnected()
+        ) {
+          updateEvent(updatedTask, task.gcalEventId);
         }
-        return task;
-      })
-    );
-  };
 
-  const handleTaskDelete = async (taskId: string) => {
-    const taskToDelete = tasks.find((task) => task.id === taskId);
-
-    // Delete from Google Calendar if synced
-    if (
-      taskToDelete?.gcalEventId &&
-      userSettings.syncWithGoogleCalendar &&
-      isSignedIn &&
-      hasGoogleConnected()
-    ) {
-      await deleteEvent(taskToDelete.gcalEventId);
-    }
-
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-  };
-
-  const handleTaskToggleComplete = async (taskId: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === taskId) {
-          const updatedTask = {
-            ...task,
-            completed: !task.completed,
-            updated_at: new Date(),
-          };
-
-          // Update Google Calendar if synced
-          if (
-            task.gcalEventId &&
-            userSettings.syncWithGoogleCalendar &&
-            isSignedIn &&
-            hasGoogleConnected()
-          ) {
-            updateEvent(updatedTask, task.gcalEventId);
-          }
-
-          return updatedTask;
-        }
-        return task;
-      })
-    );
-  };
+        await toggleTask(taskId);
+      }
+    },
+    [
+      tasks,
+      settings.autoRemoveCompleted,
+      settings.syncWithGoogleCalendar,
+      isSignedIn,
+      hasGoogleConnected,
+      updateEvent,
+      toggleTask,
+      handleTaskDelete,
+    ]
+  );
 
   return (
     <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
@@ -536,19 +319,12 @@ function CalendarPage() {
             </span>
           </Button>
           <div className="flex gap-2">
-            <SyncPopover
-              syncOpen={syncOpen}
-              setSyncOpen={setSyncOpen}
-              handleExport={handleExport}
-              handleImport={handleImport}
-            />
-            <SettingsPopover
-              onSettingsChange={handleSettingsChange}
-              isMobile={isMobile}
-            />
+            <SyncPopover />
+            <SettingsPopover isMobile={isMobile} />
           </div>
         </div>
       </div>
+
       <div className="flex-1 flex flex-col">
         <div className="grid grid-cols-7 border-b border-neutral-800/40 text-center text-xs font-medium leading-6">
           <div className="border-r border-neutral-800/40 py-3 text-neutral-400">
@@ -665,6 +441,7 @@ function CalendarPage() {
         </div>
       </div>
 
+      {/* Task Input Overlay */}
       <AnimatePresence>
         {isInputVisible && (
           <motion.div
@@ -689,7 +466,7 @@ function CalendarPage() {
                 }
                 onClose={handleClose}
                 isMobile={isMobile}
-                aiDisabled={!userSettings.aiEnabled}
+                aiDisabled={!settings.aiEnabled}
               />
             </div>
           </motion.div>

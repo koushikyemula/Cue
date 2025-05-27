@@ -7,7 +7,7 @@ import {
   serializeTask,
   sortTasks,
 } from "@/lib/utils/task";
-import { SortOption, TaskItem } from "@/types";
+import { TaskItem } from "@/types";
 import { addDays } from "date-fns";
 import { CalendarIcon, ViewIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
@@ -16,9 +16,9 @@ import { Progress } from "./progress";
 import { TaskList } from "./task-list";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { useTaskStoreWithPersistence } from "@/stores/task-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import { useGoogleCalendar } from "@/hooks";
-import { UserSettings, defaultSettings } from "./settings-popover";
-import { useLocalStorage } from "@/hooks/use-local-storage";
 
 const EmptyState = ({ isMobile }: { isMobile: boolean }) => {
   const isMac =
@@ -53,9 +53,9 @@ const TaskSkeleton = () => (
   <div className="space-y-1" aria-label="Loading task items">
     {[...Array(3)].map((_, i) => (
       <div key={i} className="px-4 py-2.5 flex items-center gap-3">
-        <div className="w-5 h-5   bg-muted-foreground/20 animate-pulse" />
+        <div className="w-5 h-5 bg-muted-foreground/20 animate-pulse" />
         <div className="flex-1">
-          <div className="h-2.5 w-32   bg-muted-foreground/20 animate-pulse" />
+          <div className="h-2.5 w-32 bg-muted-foreground/20 animate-pulse" />
         </div>
       </div>
     ))}
@@ -63,35 +63,22 @@ const TaskSkeleton = () => (
 );
 
 interface TaskProps {
-  initialTasks: TaskItem[];
-  setTasks: (value: TaskItem[] | ((val: TaskItem[]) => TaskItem[])) => void;
-  sortBy: SortOption;
-  defaultViewMode?: "date" | "all";
   isMobile?: boolean;
-  pendingIndicator?: boolean;
   onDateChange?: (date: Date) => void;
 }
 
-export default function Task({
-  initialTasks,
-  setTasks,
-  pendingIndicator,
-  sortBy,
-  isMobile = false,
-  defaultViewMode = "date",
-  onDateChange,
-}: TaskProps) {
+export default function Task({ isMobile = false, onDateChange }: TaskProps) {
   const [isClientLoaded, setIsClientLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const { tasks, toggleTask, deleteTask, updateTask } =
+    useTaskStoreWithPersistence();
+  const { settings } = useSettingsStore();
   const { isSignedIn, hasGoogleConnected, updateEvent, deleteEvent } =
     useGoogleCalendar();
-  const [settings] = useLocalStorage<UserSettings>(
-    "user-settings",
-    defaultSettings
-  );
 
   const [viewState, dispatch] = useReducer(
     (
@@ -107,7 +94,7 @@ export default function Task({
           return state;
       }
     },
-    { mode: defaultViewMode, key: 0 }
+    { mode: settings.defaultViewMode, key: 0 }
   );
 
   const viewMode = viewState.mode;
@@ -117,21 +104,21 @@ export default function Task({
   }, []);
 
   useEffect(() => {
-    if (defaultViewMode === "all") {
+    if (settings.defaultViewMode === "all") {
       dispatch({ type: "SET_ALL_MODE" });
     } else {
       dispatch({ type: "SET_DATE_MODE" });
     }
-  }, [defaultViewMode]);
+  }, [settings.defaultViewMode]);
 
   const dateFilteredTasks = useMemo(
-    () => (isClientLoaded ? filterTasksByDate(initialTasks, selectedDate) : []),
-    [initialTasks, selectedDate, isClientLoaded]
+    () => (isClientLoaded ? filterTasksByDate(tasks, selectedDate) : []),
+    [tasks, selectedDate, isClientLoaded]
   );
 
   const allTasks = useMemo(
-    () => (isClientLoaded ? initialTasks : []),
-    [initialTasks, isClientLoaded]
+    () => (isClientLoaded ? tasks : []),
+    [tasks, isClientLoaded]
   );
 
   const filteredTasks = useMemo(() => {
@@ -145,56 +132,63 @@ export default function Task({
 
   const sortedTasks = useMemo(() => {
     if (!isClientLoaded) return [];
-    return sortTasks([...filteredTasks], sortBy);
-  }, [filteredTasks, sortBy, isClientLoaded]);
+    return sortTasks([...filteredTasks], settings.defaultSortBy);
+  }, [filteredTasks, settings.defaultSortBy, isClientLoaded]);
 
   const taskCounts = useMemo(() => {
     if (!isClientLoaded) return { completed: 0, remaining: 0, progress: 0 };
 
-    const tasks = viewMode === "date" ? [...dateFilteredTasks] : [...allTasks];
-    const completed = tasks.filter((task) => task.completed).length;
-    const remaining = tasks.filter((task) => !task.completed).length;
+    const tasksToCount =
+      viewMode === "date" ? [...dateFilteredTasks] : [...allTasks];
+    const completed = tasksToCount.filter((task) => task.completed).length;
+    const remaining = tasksToCount.filter((task) => !task.completed).length;
     const progress =
-      tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+      tasksToCount.length > 0
+        ? Math.round((completed / tasksToCount.length) * 100)
+        : 0;
 
     return { completed, remaining, progress };
   }, [dateFilteredTasks, allTasks, viewMode, isClientLoaded]);
 
-  const toggleTask = useCallback(
-    (id: string) => {
-      setTasks((prevTasks) => {
-        const newTasks = prevTasks.map((task) => {
-          if (task.id === id) {
-            return { ...task, completed: !task.completed };
-          }
-          return task;
-        });
+  const handleDeleteTask = useCallback(
+    async (id: string) => {
+      const taskToDelete = tasks.find((task) => task.id === id);
 
-        return newTasks;
-      });
+      // Delete from Google Calendar if synced
+      if (
+        settings.syncWithGoogleCalendar &&
+        isSignedIn &&
+        hasGoogleConnected() &&
+        taskToDelete?.gcalEventId
+      ) {
+        await deleteEvent(taskToDelete.gcalEventId);
+      }
+
+      await deleteTask(id);
     },
-    [setTasks]
+    [
+      tasks,
+      settings.syncWithGoogleCalendar,
+      isSignedIn,
+      hasGoogleConnected,
+      deleteEvent,
+      deleteTask,
+    ]
   );
 
-  const deleteTask = useCallback(
-    (id: string) => {
-      setTasks((prevTasks) => {
-        const taskToDelete = prevTasks.find((task) => task.id === id);
+  const handleToggleTask = useCallback(
+    async (id: string) => {
+      const task = tasks.find((t) => t.id === id);
+      if (!task) return;
 
-        // Delete from Google Calendar if synced
-        if (
-          settings.syncWithGoogleCalendar &&
-          isSignedIn &&
-          hasGoogleConnected() &&
-          taskToDelete?.gcalEventId
-        ) {
-          deleteEvent(taskToDelete.gcalEventId);
-        }
-
-        return prevTasks.filter((task) => task.id !== id);
-      });
+      // If auto-remove is enabled and task is being completed, delete it instead
+      if (settings.autoRemoveCompleted && !task.completed) {
+        await handleDeleteTask(id);
+      } else {
+        await toggleTask(id);
+      }
     },
-    [setTasks, settings, isSignedIn, hasGoogleConnected, deleteEvent]
+    [toggleTask, tasks, settings.autoRemoveCompleted, handleDeleteTask]
   );
 
   const startEditing = useCallback((id: string, text: string) => {
@@ -208,49 +202,46 @@ export default function Task({
   }, []);
 
   const handleEditTask = useCallback(
-    (updatedTask: TaskItem) => {
+    async (updatedTask: TaskItem) => {
       if (!updatedTask.text.trim()) {
         cancelEditing();
         return;
       }
 
       try {
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => {
-            if (task.id === updatedTask.id) {
-              const finalTask = serializeTask({
-                ...task,
-                text: updatedTask.text,
-                scheduled_time: updatedTask.scheduled_time,
-                priority: updatedTask.priority,
-              });
+        const task = tasks.find((t) => t.id === updatedTask.id);
+        if (!task) return;
 
-              if (
-                settings.syncWithGoogleCalendar &&
-                isSignedIn &&
-                hasGoogleConnected() &&
-                task.gcalEventId &&
-                (task.text !== updatedTask.text ||
-                  task.scheduled_time !== updatedTask.scheduled_time ||
-                  task.priority !== updatedTask.priority)
-              ) {
-                updateEvent(finalTask, task.gcalEventId);
-              }
+        const finalTask = serializeTask({
+          ...task,
+          text: updatedTask.text,
+          scheduled_time: updatedTask.scheduled_time,
+          priority: updatedTask.priority,
+        });
 
-              return finalTask;
-            }
-            return task;
-          })
-        );
+        if (
+          settings.syncWithGoogleCalendar &&
+          isSignedIn &&
+          hasGoogleConnected() &&
+          task.gcalEventId &&
+          (task.text !== updatedTask.text ||
+            task.scheduled_time !== updatedTask.scheduled_time ||
+            task.priority !== updatedTask.priority)
+        ) {
+          await updateEvent(finalTask, task.gcalEventId);
+        }
+
+        await updateTask(updatedTask.id, finalTask);
         cancelEditing();
       } catch (error) {
         console.error("Failed to update task:", error);
       }
     },
     [
-      setTasks,
+      tasks,
+      updateTask,
       cancelEditing,
-      settings,
+      settings.syncWithGoogleCalendar,
       isSignedIn,
       hasGoogleConnected,
       updateEvent,
@@ -472,13 +463,13 @@ export default function Task({
           {viewMode === "all" && (
             <div className="h-9 px-4 py-2 bg-neutral-900 dark:bg-neutral-900/80 border border-border/40 rounded-md flex items-center dark:border-input gap-2">
               <span className="flex items-center text-xs font-normal text-muted-foreground dark:text-neutral-400">
-                <span>{initialTasks.filter((t) => !t.completed).length}</span>
+                <span>{tasks.filter((t) => !t.completed).length}</span>
                 <span className="ml-1">active</span>
-                {initialTasks.filter((t) => t.completed).length > 0 && (
+                {tasks.filter((t) => t.completed).length > 0 && (
                   <span className="flex items-center ml-1">
                     <span className="h-1 w-1 rounded-full bg-muted-foreground/30 mx-1.5" />
                     <span className="text-muted-foreground/70 dark:text-neutral-500">
-                      {initialTasks.filter((t) => t.completed).length}
+                      {tasks.filter((t) => t.completed).length}
                     </span>
                     <span className="ml-1 text-muted-foreground/60 dark:text-neutral-500">
                       done
@@ -522,9 +513,12 @@ export default function Task({
             >
               <div className="h-full overflow-y-auto">
                 <TaskList
-                  tasks={sortTasks([...dateFilteredTasks], sortBy)}
-                  onToggle={toggleTask}
-                  onDelete={deleteTask}
+                  tasks={sortTasks(
+                    [...dateFilteredTasks],
+                    settings.defaultSortBy
+                  )}
+                  onToggle={handleToggleTask}
+                  onDelete={handleDeleteTask}
                   onEdit={startEditing}
                   editingTaskId={editingTaskId}
                   editText={editText}
@@ -532,7 +526,7 @@ export default function Task({
                   handleEditTask={handleEditTask}
                   cancelEditing={cancelEditing}
                   viewMode="date"
-                  pendingIndicator={pendingIndicator}
+                  pendingIndicator={settings.pendingEnabled}
                 />
               </div>
             </div>
@@ -547,9 +541,9 @@ export default function Task({
             >
               <div className="h-full overflow-y-auto">
                 <TaskList
-                  tasks={sortTasks([...allTasks], sortBy)}
-                  onToggle={toggleTask}
-                  onDelete={deleteTask}
+                  tasks={sortTasks([...allTasks], settings.defaultSortBy)}
+                  onToggle={handleToggleTask}
+                  onDelete={handleDeleteTask}
                   onEdit={startEditing}
                   editingTaskId={editingTaskId}
                   editText={editText}
@@ -557,7 +551,7 @@ export default function Task({
                   handleEditTask={handleEditTask}
                   cancelEditing={cancelEditing}
                   viewMode="all"
-                  pendingIndicator={pendingIndicator}
+                  pendingIndicator={settings.pendingEnabled}
                 />
               </div>
             </div>
