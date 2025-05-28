@@ -86,8 +86,8 @@ export function useGoogleCalendar() {
     if (task.priority) {
       descriptionParts.push(`Priority: ${task.priority}`);
     }
-    if (task.comment) {
-      descriptionParts.push(task.comment);
+    if (task.description) {
+      descriptionParts.push(task.description);
     }
     const description = descriptionParts.join("\n\n");
 

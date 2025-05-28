@@ -13,8 +13,9 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/task";
 import { TaskItem } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, ExternalLink, Pencil, X } from "lucide-react";
+import { AlertCircle, Clock, ExternalLink, Pencil, X } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useSettingsStore } from "@/stores/settings-store";
 
 const PriorityIndicator = memo(
   ({ priority }: { priority?: "high" | "medium" | "low" }) => {
@@ -26,7 +27,12 @@ const PriorityIndicator = memo(
       low: "bg-blue-500/20 border-blue-500/50 text-blue-400",
     };
     return (
-      <div className={cn("text-xs px-1.5 py-0.5 border", styleMap[priority])}>
+      <div
+        className={cn(
+          "text-xs px-1.5 py-0.5 border capitalize",
+          styleMap[priority]
+        )}
+      >
         {priority}
       </div>
     );
@@ -140,13 +146,22 @@ const TaskEditForm = memo(
 
         <div className="flex w-full gap-2">
           <Select
-            value={editPriority || undefined}
-            onValueChange={(value: any) => setEditPriority(value)}
+            value={editPriority || ""}
+            onValueChange={(value: string) =>
+              setEditPriority(
+                value === "none"
+                  ? undefined
+                  : (value as "high" | "medium" | "low")
+              )
+            }
           >
             <SelectTrigger className="h-12 bg-background/50 backdrop-blur-sm border border-border/10 px-3 flex-1 min-w-[140px] transition-all duration-200 hover:border-border/30 focus:border-border/40 focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent className="border-border/20 bg-neutral-800/90 dark:bg-neutral-800/90 backdrop-blur-md   overflow-hidden">
+              <SelectItem value="none" className="text-neutral-400">
+                <span>None</span>
+              </SelectItem>
               <SelectItem
                 value="high"
                 className="text-red-500 dark:text-red-400 transition-colors duration-150 hover:bg-accent/50 focus:bg-accent/70"
@@ -206,7 +221,7 @@ const TaskEditForm = memo(
 );
 TaskEditForm.displayName = "TaskEditForm";
 
-const TextWithLinks = memo(
+export const TextWithLinks = memo(
   ({ text, isCompleted }: { text: string; isCompleted: boolean }) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
 
@@ -282,6 +297,8 @@ export function TaskList({
     "high" | "medium" | "low" | undefined
   >(undefined);
 
+  const { settings } = useSettingsStore();
+
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -329,6 +346,7 @@ export function TaskList({
       <AnimatePresence initial={false}>
         {tasks.map((task) => {
           const isPending =
+            settings.pendingEnabled &&
             pendingIndicator &&
             !task.completed &&
             task.date &&
@@ -347,8 +365,7 @@ export function TaskList({
                   ? "text-muted-foreground/50"
                   : "hover:bg-muted/40",
                 editingTaskId === task.id && "bg-muted/60",
-                isPending &&
-                  "border-l-2 border-l-yellow-500/70 bg-yellow-500/5",
+                isPending && "border-l-2 border-l-yellow-500/60",
                 "transition-colors"
               )}
             >
@@ -420,10 +437,10 @@ export function TaskList({
                         <PriorityIndicator priority={task.priority} />
                       )}
                       {isPending && (
-                        <span className="text-xs bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded-sm border border-yellow-500/30 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>pending</span>
-                        </span>
+                        <div className="flex items-center gap-1 text-xs text-yellow-500/80 bg-yellow-500/10 px-2 py-0.5 border border-yellow-500/20">
+                          <AlertCircle className="w-3 h-3" />
+                          <span className="font-medium">Pending</span>
+                        </div>
                       )}
                     </motion.div>
                   </motion.div>

@@ -2,8 +2,8 @@
 
 import { SettingsPopover } from "@/components/settings-button";
 import { SyncPopover } from "@/components/sync-button";
-import { TaskContextMenu } from "@/components/task-context-menu";
-import { TaskDialog } from "@/components/task-dialog";
+import { TaskDetailPopover } from "@/components/task-detail-popover";
+import { TaskEditDialog } from "@/components/task-edit-dialog";
 import AiInput from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
 import { formatTimeDisplay } from "@/components/ui/time-picker";
@@ -30,6 +30,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -56,16 +57,16 @@ const colStartClasses = [
   "col-start-7",
 ];
 
-export const getPriorityColor = (priority?: string) => {
+const getPriorityColor = (priority?: string) => {
   switch (priority) {
     case "high":
-      return "bg-red-500/20 border-red-500/30";
+      return "bg-red-500/20 border-red-500/50 text-red-400";
     case "medium":
-      return "bg-yellow-500/20 border-yellow-500/30";
+      return "bg-orange-500/20 border-orange-500/50 text-orange-400";
     case "low":
-      return "bg-green-500/20 border-green-500/30";
+      return "bg-blue-500/20 border-blue-500/50 text-blue-400";
     default:
-      return "bg-neutral-700/50 border-neutral-600/50";
+      return "bg-neutral-500/20 border-neutral-500/50 text-neutral-400";
   }
 };
 
@@ -77,6 +78,8 @@ function CalendarPage() {
   );
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { tasks, updateTask, deleteTask, toggleTask, processAIActions } =
@@ -146,8 +149,12 @@ function CalendarPage() {
   const handleSubmit = async (text: string, onComplete?: () => void) => {
     if (!text.trim()) return;
 
+    // Enhance the text with date context for better AI understanding
+    const dateContext = format(selectedDay, "EEEE, MMMM d, yyyy");
+    const enhancedText = `${text} (for ${dateContext})`;
+
     try {
-      await processAIActions(text, selectedDay, settings, {
+      await processAIActions(enhancedText, selectedDay, settings, {
         isSignedIn,
         hasGoogleConnected,
         createEvent,
@@ -176,12 +183,12 @@ function CalendarPage() {
     setSelectedDay(today);
   }
 
-  const handleTaskClick = useCallback(
+  const handleTaskEdit = useCallback(
     (taskId: string) => {
       const task = tasks.find((t) => t.id === taskId);
       if (task) {
-        setSelectedTask(task);
-        setTaskDialogOpen(true);
+        setEditingTask(task);
+        setEditDialogOpen(true);
       }
     },
     [tasks]
@@ -189,12 +196,35 @@ function CalendarPage() {
 
   const handleTaskSave = useCallback(
     async (updatedTask: TaskItem) => {
+      const task = tasks.find((t) => t.id === updatedTask.id);
+      if (!task) return;
+
+      // Update Google Calendar if synced and changed
+      if (
+        settings.syncWithGoogleCalendar &&
+        isSignedIn &&
+        hasGoogleConnected() &&
+        task.gcalEventId &&
+        (task.text !== updatedTask.text ||
+          task.scheduled_time !== updatedTask.scheduled_time ||
+          task.priority !== updatedTask.priority)
+      ) {
+        await updateEvent(updatedTask, task.gcalEventId);
+      }
+
       await updateTask(updatedTask.id, {
         ...updatedTask,
         updated_at: new Date(),
       });
     },
-    [updateTask]
+    [
+      updateTask,
+      tasks,
+      settings.syncWithGoogleCalendar,
+      isSignedIn,
+      hasGoogleConnected,
+      updateEvent,
+    ]
   );
 
   const handleTaskDelete = useCallback(
@@ -262,6 +292,19 @@ function CalendarPage() {
     ]
   );
 
+  const isDateBeforeToday = useCallback((dateInput?: string | Date) => {
+    if (!dateInput) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const taskDate =
+      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+    taskDate.setHours(0, 0, 0, 0);
+
+    return taskDate < today;
+  }, []);
+
   return (
     <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
       <div className="flex flex-col space-y-4 p-4 md:flex-row md:items-center md:justify-between md:space-y-0 border-b border-neutral-800/40">
@@ -325,8 +368,8 @@ function CalendarPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
-        <div className="grid grid-cols-7 border-b border-neutral-800/40 text-center text-xs font-medium leading-6">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="sticky top-0 z-10 grid grid-cols-7 border-b border-neutral-800/40 text-center text-xs font-medium leading-6 bg-neutral-900">
           <div className="border-r border-neutral-800/40 py-3 text-neutral-400">
             Sun
           </div>
@@ -347,101 +390,119 @@ function CalendarPage() {
           </div>
           <div className="py-3 text-neutral-400">Sat</div>
         </div>
-        <div className="flex-1 grid grid-cols-7 grid-rows-5">
-          {days.map((day, dayIdx) => {
-            const dayEvents =
-              calendarData.find((d) => isSameDay(d.day, day))?.events || [];
-            return (
-              <div
-                key={dayIdx}
-                onClick={() => setSelectedDay(day)}
-                className={cn(
-                  dayIdx === 0 && colStartClasses[getDay(day)],
-                  !isSameMonth(day, firstDayCurrentMonth) &&
-                    "bg-neutral-900/50 text-neutral-600",
-                  "relative flex flex-col border-b border-r border-neutral-800/40 hover:bg-neutral-800/30 cursor-pointer transition-colors h-full max-h-[160px] overflow-hidden",
-                  isEqual(day, selectedDay) &&
-                    "bg-neutral-800/50 ring-1 ring-neutral-700"
-                )}
-              >
-                <header className="flex items-center justify-between p-2 pb-1">
-                  <button
-                    type="button"
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full text-xs transition-colors",
-                      isEqual(day, selectedDay) &&
-                        isToday(day) &&
-                        "bg-white text-black",
-                      isEqual(day, selectedDay) &&
-                        !isToday(day) &&
-                        "bg-neutral-700 text-white",
-                      !isEqual(day, selectedDay) &&
-                        isToday(day) &&
-                        "bg-neutral-700 text-white",
-                      !isEqual(day, selectedDay) &&
-                        !isToday(day) &&
-                        "hover:bg-neutral-800",
-                      !isSameMonth(day, firstDayCurrentMonth) &&
-                        "text-neutral-600"
-                    )}
-                  >
-                    <time dateTime={format(day, "yyyy-MM-dd")}>
-                      {format(day, "d")}
-                    </time>
-                  </button>
-                </header>
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-7 auto-rows-fr min-h-full">
+            {days.map((day, dayIdx) => {
+              const dayEvents =
+                calendarData.find((d) => isSameDay(d.day, day))?.events || [];
 
-                <div className="flex-1 px-2 pt-0 space-y-1">
-                  {dayEvents.slice(0, 3).map((event) => {
-                    const task = tasks.find((t) => t.id === event.id);
-                    if (!task) return null;
-
-                    return (
-                      <TaskContextMenu
-                        key={event.id}
-                        task={task}
-                        onEdit={() => handleTaskClick(event.id)}
-                        onDelete={() => handleTaskDelete(event.id)}
-                        onToggleComplete={() =>
-                          handleTaskToggleComplete(event.id)
-                        }
-                      >
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTaskClick(event.id);
-                          }}
-                          className={cn(
-                            "text-xs p-1.5 border truncate cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-[1.02]",
-                            getPriorityColor(event.priority),
-                            task.completed && "opacity-60 line-through"
-                          )}
-                        >
-                          <p className="font-medium text-white truncate">
-                            {event.name}
-                          </p>
-                          {event.time !== "All day" && (
-                            <p className="text-neutral-300 text-[10px]">
-                              {event.time}
-                            </p>
-                          )}
-                        </div>
-                      </TaskContextMenu>
-                    );
-                  })}
-                  {dayEvents.length > 3 && (
-                    <div className="text-[10px] text-neutral-400 px-1.5">
-                      +{dayEvents.length - 3} more
-                    </div>
+              return (
+                <div
+                  key={dayIdx}
+                  onClick={() => setSelectedDay(day)}
+                  onDoubleClick={() => {
+                    setSelectedDay(day);
+                    setIsInputVisible(true);
+                  }}
+                  className={cn(
+                    dayIdx === 0 && colStartClasses[getDay(day)],
+                    !isSameMonth(day, firstDayCurrentMonth) &&
+                      "bg-neutral-900/50 text-neutral-600",
+                    "relative flex flex-col border-b border-r border-neutral-800/40 hover:bg-neutral-800/30 cursor-pointer transition-colors min-h-[120px] overflow-hidden group",
+                    isEqual(day, selectedDay) &&
+                      "bg-neutral-800/50 ring-1 ring-neutral-700"
                   )}
+                >
+                  <header className="flex items-center justify-between p-2 pb-1">
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex h-6 w-6 items-center justify-center rounded-full text-xs transition-colors",
+                        isEqual(day, selectedDay) &&
+                          isToday(day) &&
+                          "bg-white text-black",
+                        isEqual(day, selectedDay) &&
+                          !isToday(day) &&
+                          "bg-neutral-700 text-white",
+                        !isEqual(day, selectedDay) &&
+                          isToday(day) &&
+                          "bg-neutral-700 text-white",
+                        !isEqual(day, selectedDay) &&
+                          !isToday(day) &&
+                          "hover:bg-neutral-800",
+                        !isSameMonth(day, firstDayCurrentMonth) &&
+                          "text-neutral-600"
+                      )}
+                    >
+                      <time dateTime={format(day, "yyyy-MM-dd")}>
+                        {format(day, "d")}
+                      </time>
+                    </button>
+                  </header>
+                  <div className="flex-1 px-2 pt-0 space-y-1 relative">
+                    {dayEvents.slice(0, 3).map((event) => {
+                      const task = tasks.find((t) => t.id === event.id);
+                      if (!task) return null;
+
+                      const isPastDue =
+                        settings.pendingEnabled &&
+                        task.date &&
+                        isDateBeforeToday(task.date) &&
+                        !task.completed;
+
+                      return (
+                        <TaskDetailPopover
+                          key={event.id}
+                          task={task}
+                          onEdit={() => handleTaskEdit(event.id)}
+                          onDelete={() => handleTaskDelete(event.id)}
+                          onToggleComplete={() =>
+                            handleTaskToggleComplete(event.id)
+                          }
+                        >
+                          <div
+                            className={cn(
+                              "text-xs p-1.5 border truncate cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-[1.02]",
+                              getPriorityColor(event.priority),
+                              task.completed && "opacity-60 line-through"
+                            )}
+                          >
+                            <p className="font-medium text-white truncate">
+                              {event.name}
+                            </p>
+                            {(event.time !== "All day" || isPastDue) && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {event.time !== "All day" && (
+                                  <span className="text-neutral-300 text-[10px]">
+                                    {event.time}
+                                  </span>
+                                )}
+                                {isPastDue && (
+                                  <div className="flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 text-yellow-500" />
+                                    <span className="text-yellow-500 text-[10px] font-medium">
+                                      Pending
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </TaskDetailPopover>
+                      );
+                    })}
+                    {dayEvents.length > 3 && (
+                      <div className="text-[10px] text-neutral-400 px-1.5">
+                        +{dayEvents.length - 3} more
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
-
-      {/* Task Input Overlay */}
       <AnimatePresence>
         {isInputVisible && (
           <motion.div
@@ -458,7 +519,7 @@ function CalendarPage() {
               <AiInput
                 placeholder={`Add task for ${format(
                   selectedDay,
-                  "MMM d, yyyy"
+                  "EEEE, MMM d"
                 )}...`}
                 minHeight={48}
                 onSubmit={(text) =>
@@ -473,13 +534,12 @@ function CalendarPage() {
         )}
       </AnimatePresence>
 
-      <TaskDialog
-        task={selectedTask}
-        open={taskDialogOpen}
-        onOpenChange={setTaskDialogOpen}
+      <TaskEditDialog
+        task={editingTask}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
         onSave={handleTaskSave}
-        onDelete={handleTaskDelete}
-        onToggleComplete={handleTaskToggleComplete}
+        isMobile={isMobile}
       />
     </main>
   );
