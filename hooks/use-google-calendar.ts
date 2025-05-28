@@ -8,11 +8,13 @@ interface GoogleCalendarEvent {
   summary: string;
   description: string;
   start: {
-    dateTime: string;
+    dateTime?: string;
+    date?: string;
     timeZone?: string;
   };
   end: {
-    dateTime: string;
+    dateTime?: string;
+    date?: string;
     timeZone?: string;
   };
 }
@@ -71,17 +73,6 @@ export function useGoogleCalendar() {
   const taskToEvent = useCallback((task: TaskItem): GoogleCalendarEvent => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    let startDateTime = new Date(task.date);
-    if (task.scheduled_time) {
-      const [hours, minutes] = task.scheduled_time.split(":").map(Number);
-      startDateTime.setHours(hours, minutes, 0, 0);
-    } else {
-      startDateTime.setHours(12, 0, 0, 0);
-    }
-
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setHours(endDateTime.getHours() + 1);
-
     const descriptionParts = [];
     if (task.priority) {
       descriptionParts.push(`Priority: ${task.priority}`);
@@ -91,18 +82,44 @@ export function useGoogleCalendar() {
     }
     const description = descriptionParts.join("\n\n");
 
-    return {
-      summary: task.text,
-      description,
-      start: {
-        dateTime: startDateTime.toISOString(),
-        timeZone: timezone,
-      },
-      end: {
-        dateTime: endDateTime.toISOString(),
-        timeZone: timezone,
-      },
-    };
+    // If task has a scheduled time, create a timed event
+    if (task.scheduled_time) {
+      let startDateTime = new Date(task.date);
+      const [hours, minutes] = task.scheduled_time.split(":").map(Number);
+      startDateTime.setHours(hours, minutes, 0, 0);
+
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(endDateTime.getHours() + 1);
+
+      return {
+        summary: task.text,
+        description,
+        start: {
+          dateTime: startDateTime.toISOString(),
+          timeZone: timezone,
+        },
+        end: {
+          dateTime: endDateTime.toISOString(),
+          timeZone: timezone,
+        },
+      };
+    } else {
+      // Create an all-day event
+      const startDate = new Date(task.date);
+      const endDate = new Date(task.date);
+      endDate.setDate(endDate.getDate() + 1); // All-day events need end date to be next day
+
+      return {
+        summary: task.text,
+        description,
+        start: {
+          date: startDate.toISOString().split("T")[0], // YYYY-MM-DD format
+        },
+        end: {
+          date: endDate.toISOString().split("T")[0], // YYYY-MM-DD format
+        },
+      };
+    }
   }, []);
 
   // Create event in Google Calendar

@@ -1,5 +1,6 @@
 "use client";
 
+import CalendarView from "@/components/calendar-view";
 import { SettingsPopover } from "@/components/settings-button";
 import { SyncPopover } from "@/components/sync-button";
 import Task from "@/components/task";
@@ -8,13 +9,11 @@ import { useGoogleCalendar, useMediaQuery } from "@/hooks";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useTaskStoreWithPersistence } from "@/stores/task-store";
 import { AnimatePresence, motion } from "framer-motion";
-import { Calendar } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 function HomePage() {
-  const [isInputVisible, setIsInputVisible] = useState(true);
+  const [isInputVisible, setIsInputVisible] = useState(false);
   const [currentSelectedDate, setCurrentSelectedDate] = useState(new Date());
   const inputRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -50,15 +49,41 @@ function HomePage() {
     [processAIActions, currentSelectedDate, settings, googleCalendar]
   );
 
+  if (!isMobile) {
+    return (
+      <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
+        <CalendarView onDateChange={setCurrentSelectedDate} />
+        <AnimatePresence>
+          {isInputVisible && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm"
+              onClick={handleClose}
+            >
+              <div
+                className="w-full max-w-lg mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AiInput
+                  placeholder="What's next?"
+                  minHeight={48}
+                  onSubmit={(text) => handleSubmit(text, handleClose)}
+                  onClose={handleClose}
+                  isMobile={false}
+                  aiDisabled={!settings.aiEnabled}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    );
+  }
   return (
     <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
       <div className="fixed z-40 flex gap-2 top-5 right-5">
-        <Link
-          href="/calendar"
-          className="px-3 bg-neutral-800 border-0 shadow-none h-9 hover:cursor-pointer hover:bg-accent/30 hover:text-accent-foreground dark:text-neutral-400 dark:hover:text-foreground flex items-center justify-center border-transparent text-sm font-medium transition-colors"
-        >
-          <Calendar className="h-4 w-4" />
-        </Link>
         <SyncPopover />
         <SettingsPopover isMobile={isMobile} />
       </div>

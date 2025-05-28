@@ -12,6 +12,7 @@ interface TaskState {
   tasks: TaskItem[];
   isLoading: boolean;
   error: string | null;
+  optimisticTasks: TaskItem[]; // For storing optimistic updates
 }
 
 interface TaskActions {
@@ -27,7 +28,7 @@ interface TaskActions {
     selectedDate: Date,
     userSettings: any,
     googleCalendar: any
-  ) => Promise<void>;
+  ) => Promise<{ success: boolean }>;
   clearTasks: (
     listToClear: "all" | "completed" | "incomplete",
     selectedDate: Date
@@ -35,18 +36,25 @@ interface TaskActions {
   exportTasks: () => Promise<{ success: boolean; message: string }>;
   importTasks: (file: File) => Promise<{ success: boolean; message: string }>;
   initializeTasks: () => Promise<void>;
+  // Optimistic update helpers
+  addOptimisticTask: (task: TaskItem) => void;
+  removeOptimisticTask: (taskId: string) => void;
+  updateOptimisticTask: (taskId: string, updates: Partial<TaskItem>) => void;
+  revertOptimisticUpdate: (taskId: string) => void;
 }
 
 type TaskStore = TaskState & TaskActions;
 
 // Helper to generate unique IDs
-const generateId = () => Math.random().toString(36).substring(7);
+const generateId = () =>
+  `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
 export const useTaskStore = create<TaskStore>()(
   subscribeWithSelector((set, get) => ({
     tasks: [],
     isLoading: false,
     error: null,
+    optimisticTasks: [],
 
     setTasks: (tasks) => {
       set((state) => ({
@@ -54,36 +62,129 @@ export const useTaskStore = create<TaskStore>()(
       }));
     },
 
-    addTask: async (taskData) => {
-      const newTask = serializeTask({
-        ...taskData,
-        id: generateId(),
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
+    // Optimistic update helpers
+    addOptimisticTask: (task) => {
       set((state) => ({
-        tasks: [...state.tasks, newTask],
+        optimisticTasks: [...state.optimisticTasks, task],
       }));
     },
 
-    updateTask: async (taskId, updates) => {
+    removeOptimisticTask: (taskId) => {
       set((state) => ({
-        tasks: state.tasks.map((task) =>
+        optimisticTasks: state.optimisticTasks.filter(
+          (task) => task.id !== taskId
+        ),
+      }));
+    },
+
+    updateOptimisticTask: (taskId, updates) => {
+      set((state) => ({
+        optimisticTasks: state.optimisticTasks.map((task) =>
           task.id === taskId
-            ? serializeTask({ ...task, ...updates, updated_at: new Date() })
+            ? { ...task, ...updates, updated_at: new Date() }
             : task
         ),
       }));
     },
 
-    deleteTask: async (taskId) => {
+    revertOptimisticUpdate: (taskId) => {
       set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== taskId),
+        optimisticTasks: state.optimisticTasks.filter(
+          (task) => task.id !== taskId
+        ),
       }));
     },
 
+    addTask: async (taskData) => {
+      const tempId = generateId();
+      const newTask = serializeTask({
+        ...taskData,
+        id: tempId,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      // Optimistic update
+      get().addOptimisticTask(newTask);
+
+      try {
+        // Real task creation
+        const realTask = serializeTask({
+          ...taskData,
+          id: generateId().replace("temp-", ""),
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+
+        set((state) => ({
+          tasks: [...state.tasks, realTask],
+          optimisticTasks: state.optimisticTasks.filter(
+            (task) => task.id !== tempId
+          ),
+        }));
+      } catch (error) {
+        // Revert on error
+        get().revertOptimisticUpdate(tempId);
+        throw error;
+      }
+    },
+
+    updateTask: async (taskId, updates) => {
+      const originalTask = get().tasks.find((task) => task.id === taskId);
+      if (!originalTask) return;
+
+      // Optimistic update
+      const optimisticUpdate = { ...updates, updated_at: new Date() };
+      set((state) => ({
+        tasks: state.tasks.map((task) =>
+          task.id === taskId
+            ? serializeTask({ ...task, ...optimisticUpdate })
+            : task
+        ),
+      }));
+
+      try {
+        // This would be where you'd make the real API call
+        // For now, we just keep the optimistic update
+      } catch (error) {
+        // Revert on error
+        set((state) => ({
+          tasks: state.tasks.map((task) =>
+            task.id === taskId ? originalTask : task
+          ),
+        }));
+        throw error;
+      }
+    },
+
+    deleteTask: async (taskId) => {
+      const originalTasks = get().tasks;
+      const taskToDelete = originalTasks.find((task) => task.id === taskId);
+
+      if (!taskToDelete) return;
+
+      // Optimistic update
+      set((state) => ({
+        tasks: state.tasks.filter((task) => task.id !== taskId),
+      }));
+
+      try {
+        // This would be where you'd make the real API call
+        // For now, we just keep the optimistic update
+      } catch (error) {
+        // Revert on error
+        set({ tasks: originalTasks });
+        throw error;
+      }
+    },
+
     toggleTask: async (taskId) => {
+      const originalTasks = get().tasks;
+      const taskToToggle = originalTasks.find((task) => task.id === taskId);
+
+      if (!taskToToggle) return;
+
+      // Optimistic update
       set((state) => ({
         tasks: state.tasks.map((task) =>
           task.id === taskId
@@ -91,6 +192,15 @@ export const useTaskStore = create<TaskStore>()(
             : task
         ),
       }));
+
+      try {
+        // This would be where you'd make the real API call
+        // For now, we just keep the optimistic update
+      } catch (error) {
+        // Revert on error
+        set({ tasks: originalTasks });
+        throw error;
+      }
     },
 
     processAIActions: async (
@@ -99,36 +209,57 @@ export const useTaskStore = create<TaskStore>()(
       userSettings,
       googleCalendar
     ) => {
-      if (!text.trim()) return;
+      if (!text.trim()) return { success: false };
 
       try {
         set({ isLoading: true, error: null });
 
         if (!userSettings.aiEnabled) {
+          const tempId = generateId();
           const newTask = serializeTask({
-            id: generateId(),
+            id: tempId,
             text,
             completed: false,
             date: selectedDate,
             priority: userSettings.defaultPriority,
           });
 
-          // Sync with Google Calendar if enabled
-          if (
-            userSettings.syncWithGoogleCalendar &&
-            googleCalendar.isSignedIn &&
-            googleCalendar.hasGoogleConnected()
-          ) {
-            const eventId = await googleCalendar.createEvent(newTask);
-            if (eventId) {
-              newTask.gcalEventId = eventId;
-              newTask.syncedWithGCal = true;
-            }
-          }
+          // Optimistic update
+          get().addOptimisticTask(newTask);
 
-          get().addTask(newTask);
-          toast.success("Task created", { duration: 2000 });
-          return;
+          try {
+            // Sync with Google Calendar if enabled
+            if (
+              userSettings.syncWithGoogleCalendar &&
+              googleCalendar.isSignedIn &&
+              googleCalendar.hasGoogleConnected()
+            ) {
+              const eventId = await googleCalendar.createEvent(newTask);
+              if (eventId) {
+                newTask.gcalEventId = eventId;
+                newTask.syncedWithGCal = true;
+              }
+            }
+
+            // Replace optimistic task with real task
+            const realTask = {
+              ...newTask,
+              id: generateId().replace("temp-", ""),
+            };
+            set((state) => ({
+              tasks: [...state.tasks, realTask],
+              optimisticTasks: state.optimisticTasks.filter(
+                (task) => task.id !== tempId
+              ),
+            }));
+
+            toast.success("Task created", { duration: 2000 });
+            return { success: true };
+          } catch (error) {
+            // Revert optimistic update
+            get().revertOptimisticUpdate(tempId);
+            throw error;
+          }
         }
 
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -139,8 +270,36 @@ export const useTaskStore = create<TaskStore>()(
           timezone
         );
 
+        const tempTasks: TaskItem[] = [];
         let newTasks = [...get().tasks];
 
+        // Process actions and create optimistic updates
+        actions.forEach((action) => {
+          switch (action.action) {
+            case "add": {
+              let taskDate = selectedDate;
+              if (action.targetDate) {
+                taskDate = new Date(action.targetDate);
+              }
+              const tempId = generateId();
+              const newTask = serializeTask({
+                id: tempId,
+                text: action.text || text,
+                completed: false,
+                date: taskDate,
+                scheduled_time: action.scheduled_time,
+                priority: action.priority || userSettings.defaultPriority,
+              });
+
+              tempTasks.push(newTask);
+              get().addOptimisticTask(newTask);
+              break;
+            }
+            // Handle other actions...
+          }
+        });
+
+        // Process real actions
         await Promise.all(
           actions.map(async (action) => {
             switch (action.action) {
@@ -150,7 +309,7 @@ export const useTaskStore = create<TaskStore>()(
                   taskDate = new Date(action.targetDate);
                 }
                 const newTask = serializeTask({
-                  id: generateId(),
+                  id: generateId().replace("temp-", ""),
                   text: action.text || text,
                   completed: false,
                   date: taskDate,
@@ -301,7 +460,13 @@ export const useTaskStore = create<TaskStore>()(
           })
         );
 
-        set({ tasks: newTasks });
+        // Replace optimistic updates with real tasks
+        set((state) => ({
+          tasks: newTasks,
+          optimisticTasks: state.optimisticTasks.filter(
+            (task) => !tempTasks.some((tempTask) => tempTask.id === task.id)
+          ),
+        }));
 
         if (actions.length > 0) {
           actions.forEach((action) => {
@@ -313,33 +478,54 @@ export const useTaskStore = create<TaskStore>()(
             }
           });
         }
+
+        return { success: true };
       } catch (error) {
         console.error("AI Action failed:", error);
 
-        // Fallback: create simple task
+        // Fallback: create simple task with optimistic update
+        const tempId = generateId();
         const newTask = serializeTask({
-          id: generateId(),
+          id: tempId,
           text,
           completed: false,
           date: selectedDate,
           priority: userSettings.defaultPriority,
         });
 
-        if (
-          userSettings.syncWithGoogleCalendar &&
-          googleCalendar.isSignedIn &&
-          googleCalendar.hasGoogleConnected()
-        ) {
-          const eventId = await googleCalendar.createEvent(newTask);
-          if (eventId) {
-            newTask.gcalEventId = eventId;
-            newTask.syncedWithGCal = true;
-          }
-        }
+        get().addOptimisticTask(newTask);
 
-        get().addTask(newTask);
-        toast.success("Task created", { duration: 2000 });
-        set({ error: "AI processing failed, created simple task instead" });
+        try {
+          if (
+            userSettings.syncWithGoogleCalendar &&
+            googleCalendar.isSignedIn &&
+            googleCalendar.hasGoogleConnected()
+          ) {
+            const eventId = await googleCalendar.createEvent(newTask);
+            if (eventId) {
+              newTask.gcalEventId = eventId;
+              newTask.syncedWithGCal = true;
+            }
+          }
+
+          const realTask = {
+            ...newTask,
+            id: generateId().replace("temp-", ""),
+          };
+          set((state) => ({
+            tasks: [...state.tasks, realTask],
+            optimisticTasks: state.optimisticTasks.filter(
+              (task) => task.id !== tempId
+            ),
+          }));
+
+          toast.success("Task created", { duration: 2000 });
+          set({ error: "AI processing failed, created simple task instead" });
+          return { success: true };
+        } catch (fallbackError) {
+          get().revertOptimisticUpdate(tempId);
+          return { success: false };
+        }
       } finally {
         set({ isLoading: false });
       }
@@ -482,6 +668,11 @@ export const useTaskStoreWithPersistence = () => {
     TaskItem[]
   >("tasks", []);
 
+  // Combine regular tasks with optimistic tasks for UI display
+  const allTasks = React.useMemo(() => {
+    return [...store.tasks, ...store.optimisticTasks];
+  }, [store.tasks, store.optimisticTasks]);
+
   // Load initial data from IndexedDB when component mounts
   React.useEffect(() => {
     if (indexedTasks.length > 0 && store.tasks.length === 0) {
@@ -489,7 +680,7 @@ export const useTaskStoreWithPersistence = () => {
     }
   }, [indexedTasks, store]);
 
-  // Sync Zustand store changes to IndexedDB
+  // Sync Zustand store changes to IndexedDB (only real tasks, not optimistic)
   React.useEffect(() => {
     const unsubscribe = useTaskStore.subscribe(
       (state) => state.tasks,
@@ -503,6 +694,7 @@ export const useTaskStoreWithPersistence = () => {
 
   return {
     ...store,
+    tasks: allTasks, // Return combined tasks for UI consumption
     exportData,
     importData,
   };
