@@ -4,7 +4,6 @@ import { SettingsPopover } from "@/components/settings-button";
 import { SyncPopover } from "@/components/sync-button";
 import { TaskDetailPopover } from "@/components/task-detail-popover";
 import { TaskEditDialog } from "@/components/task-edit-dialog";
-import AiInput from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
 import { formatTimeDisplay } from "@/components/ui/time-picker";
 import { useGoogleCalendar, useMediaQuery } from "@/hooks";
@@ -33,7 +32,6 @@ import {
   startOfToday,
   startOfWeek,
 } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   Calendar,
@@ -59,6 +57,7 @@ type ViewMode = "month" | "week" | "day";
 
 interface CalendarViewProps {
   onDateChange?: (date: Date) => void;
+  onNewTaskClick?: (date: Date) => void;
 }
 
 const colStartClasses = [
@@ -101,14 +100,7 @@ const TaskEvent = memo<{
     onDelete={onDelete}
     onToggleComplete={onToggleComplete}
   >
-    <motion.div
-      initial={{ opacity: 0, y: 3 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.15,
-        delay: index * 0.03,
-        ease: "easeOut",
-      }}
+    <div
       className={cn(
         "text-xs p-2 border truncate cursor-pointer hover:opacity-90 transition-all duration-200 hover:scale-[1.01] rounded-md shadow-sm backdrop-blur-sm",
         getPriorityColor(event.priority),
@@ -135,15 +127,14 @@ const TaskEvent = memo<{
           )}
         </div>
       )}
-    </motion.div>
+    </div>
   </TaskDetailPopover>
 ));
 
 TaskEvent.displayName = "TaskEvent";
 
-function CalendarView({ onDateChange }: CalendarViewProps) {
+function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [isInputVisible, setIsInputVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState(startOfToday());
   const [currentMonth, setCurrentMonth] = useState(
     format(startOfToday(), "MMM-yyyy")
@@ -152,7 +143,7 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { tasks, updateTask, deleteTask, toggleTask, processAIActions } =
+  const { tasks, updateTask, deleteTask, toggleTask } =
     useTaskStoreWithPersistence();
   const { settings } = useSettingsStore();
   const googleCalendar = useGoogleCalendar();
@@ -242,37 +233,6 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
 
     return taskDate < today;
   }, []);
-
-  const handleClose = useCallback(() => setIsInputVisible(false), []);
-
-  const handleSubmit = useCallback(
-    async (text: string, onComplete?: () => void): Promise<void> => {
-      if (!text.trim()) return;
-
-      const dateContext = format(selectedDay, "EEEE, MMMM d, yyyy");
-      const enhancedText = `${text} (for ${dateContext})`;
-
-      try {
-        const result = await processAIActions(
-          enhancedText,
-          selectedDay,
-          settings,
-          googleCalendar
-        );
-
-        // Auto-close input on successful task creation
-        if (result.success) {
-          setIsInputVisible(false);
-        }
-
-        onComplete?.();
-      } catch (error) {
-        console.error("Failed to process task input:", error);
-        onComplete?.();
-      }
-    },
-    [processAIActions, selectedDay, settings, googleCalendar]
-  );
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
@@ -399,10 +359,13 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
     setSelectedDay(day);
   }, []);
 
-  const handleDayDoubleClick = useCallback((day: Date) => {
-    setSelectedDay(day);
-    setIsInputVisible(true);
-  }, []);
+  const handleDayDoubleClick = useCallback(
+    (day: Date) => {
+      setSelectedDay(day);
+      onNewTaskClick?.(day);
+    },
+    [onNewTaskClick]
+  );
 
   useEffect(() => {
     onDateChange?.(selectedDay);
@@ -410,12 +373,6 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsInputVisible((prev) => !prev);
-      }
-
       if (e.altKey) {
         if (e.key === "[" || e.code === "BracketLeft") {
           e.preventDefault();
@@ -701,7 +658,6 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
               <div
                 key={hour.getTime()}
                 className="h-16 border-b border-neutral-800/40 relative hover:bg-neutral-800/20 transition-colors"
-                onClick={() => setIsInputVisible(true)}
               />
             ))}
 
@@ -932,7 +888,7 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
           </div>
 
           <Button
-            onClick={() => setIsInputVisible(true)}
+            onClick={() => onNewTaskClick?.(selectedDay)}
             variant="outline"
             className="gap-2 cursor-pointer bg-neutral-800/50 hover:bg-neutral-700/50 border-neutral-700/50 text-neutral-200 transition-all duration-200 hover:shadow-md px-4 py-2 h-10"
           >
@@ -957,37 +913,6 @@ function CalendarView({ onDateChange }: CalendarViewProps) {
         {viewMode === "week" && renderWeekView()}
         {viewMode === "day" && renderDayView()}
       </div>
-
-      <AnimatePresence>
-        {isInputVisible && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm"
-            onClick={handleClose}
-          >
-            <div
-              className="w-full max-w-lg mb-8"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <AiInput
-                placeholder={`Add task for ${format(
-                  selectedDay,
-                  "EEEE, MMM d"
-                )}...`}
-                minHeight={48}
-                onSubmit={(text) =>
-                  handleSubmit(text, () => setIsInputVisible(false))
-                }
-                onClose={handleClose}
-                isMobile={false}
-                aiDisabled={!settings.aiEnabled}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <TaskEditDialog
         task={editingTask}

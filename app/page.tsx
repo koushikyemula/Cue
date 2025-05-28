@@ -52,7 +52,13 @@ function HomePage() {
   if (!isMobile) {
     return (
       <main className="flex flex-col w-full h-full mx-auto bg-neutral-900">
-        <CalendarView onDateChange={setCurrentSelectedDate} />
+        <CalendarView
+          onDateChange={setCurrentSelectedDate}
+          onNewTaskClick={(date) => {
+            setCurrentSelectedDate(date);
+            setIsInputVisible(true);
+          }}
+        />
         <AnimatePresence>
           {isInputVisible && (
             <motion.div
