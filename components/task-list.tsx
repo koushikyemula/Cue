@@ -274,7 +274,7 @@ interface TaskListProps {
   setEditText: (text: string) => void;
   handleEditTask: (task: TaskItem) => void;
   cancelEditing: () => void;
-  viewMode?: "date" | "all";
+  viewMode?: "day" | "all";
   pendingIndicator?: boolean;
 }
 
@@ -288,7 +288,7 @@ export function TaskList({
   setEditText,
   handleEditTask,
   cancelEditing,
-  viewMode = "date",
+  viewMode = "day",
   pendingIndicator,
 }: TaskListProps) {
   const [isMobile, setIsMobile] = useState(false);

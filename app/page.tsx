@@ -58,6 +58,7 @@ function HomePage() {
             setCurrentSelectedDate(date);
             setIsInputVisible(true);
           }}
+          isMobile={isMobile}
         />
         <AnimatePresence>
           {isInputVisible && (

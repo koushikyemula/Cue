@@ -197,11 +197,19 @@ export function SettingsPopover({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end">
+                {!isMobile && (
+                  <SelectItem
+                    value="month"
+                    className="cursor-pointer hover:bg-accent/30"
+                  >
+                    Month
+                  </SelectItem>
+                )}
                 <SelectItem
-                  value="date"
+                  value="day"
                   className="cursor-pointer hover:bg-accent/30"
                 >
-                  Date
+                  Day
                 </SelectItem>
                 <SelectItem
                   value="all"

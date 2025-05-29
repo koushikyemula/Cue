@@ -4,10 +4,12 @@ import { SettingsPopover } from "@/components/settings-button";
 import { SyncPopover } from "@/components/sync-button";
 import { TaskDetailPopover } from "@/components/task-detail-popover";
 import { TaskEditDialog } from "@/components/task-edit-dialog";
+import { TaskList } from "@/components/task-list";
 import { Button } from "@/components/ui/button";
 import { formatTimeDisplay } from "@/components/ui/time-picker";
-import { useGoogleCalendar, useMediaQuery } from "@/hooks";
+import { useGoogleCalendar } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { serializeTask, sortTasks } from "@/lib/utils/task";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useTaskStoreWithPersistence } from "@/stores/task-store";
 import type { TaskItem } from "@/types";
@@ -15,10 +17,7 @@ import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react";
 import {
   add,
   addDays,
-  addWeeks,
   eachDayOfInterval,
-  eachHourOfInterval,
-  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
@@ -28,16 +27,10 @@ import {
   isSameMonth,
   isToday,
   parse,
-  startOfDay,
   startOfToday,
   startOfWeek,
 } from "date-fns";
-import {
-  AlertCircle,
-  Calendar,
-  CalendarDays,
-  CalendarRange,
-} from "lucide-react";
+import { AlertCircle, Calendar, CalendarDays, List } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 interface CalendarEvent {
@@ -53,11 +46,12 @@ interface CalendarData {
   events: CalendarEvent[];
 }
 
-type ViewMode = "month" | "week" | "day";
+type ViewMode = "month" | "day" | "all";
 
 interface CalendarViewProps {
   onDateChange?: (date: Date) => void;
   onNewTaskClick?: (date: Date) => void;
+  isMobile: boolean;
 }
 
 const colStartClasses = [
@@ -88,12 +82,11 @@ const getPriorityColor = (priority?: string): string => {
 const TaskEvent = memo<{
   event: CalendarEvent;
   task: TaskItem;
-  index: number;
   isPastDue: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onToggleComplete: () => void;
-}>(({ event, task, index, isPastDue, onEdit, onDelete, onToggleComplete }) => (
+}>(({ event, task, isPastDue, onEdit, onDelete, onToggleComplete }) => (
   <TaskDetailPopover
     task={task}
     onEdit={onEdit}
@@ -133,8 +126,36 @@ const TaskEvent = memo<{
 
 TaskEvent.displayName = "TaskEvent";
 
-function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
+const EmptyState = ({ isMobile }: { isMobile: boolean }) => {
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const shortcutKey = isMac ? "⌘K" : "Ctrl+K";
+  return (
+    <div className="flex flex-col items-center justify-center text-center min-h-[60dvh] p-8 space-y-2">
+      {!isMobile && (
+        <p className="text-sm text-muted-foreground max-w-[280px]">
+          Press <kbd className="bg-muted px-1 rounded">{shortcutKey}</kbd> to
+          add a new task
+        </p>
+      )}
+      {isMobile && (
+        <p className="text-sm text-muted-foreground max-w-[280px]">
+          Use the input box below to add a new task
+        </p>
+      )}
+    </div>
+  );
+};
+
+function CalendarView({
+  onDateChange,
+  onNewTaskClick,
+  isMobile,
+}: CalendarViewProps) {
+  const { settings } = useSettingsStore();
+
+  const [viewMode, setViewMode] = useState<ViewMode>(settings.defaultViewMode);
   const [selectedDay, setSelectedDay] = useState(startOfToday());
   const [currentMonth, setCurrentMonth] = useState(
     format(startOfToday(), "MMM-yyyy")
@@ -142,10 +163,11 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
   const { tasks, updateTask, deleteTask, toggleTask } =
     useTaskStoreWithPersistence();
-  const { settings } = useSettingsStore();
   const googleCalendar = useGoogleCalendar();
 
   const today = useMemo(() => startOfToday(), []);
@@ -161,25 +183,8 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
     });
   }, [firstDayCurrentMonth]);
 
-  const weekDays = useMemo(() => {
-    const weekStart = startOfWeek(selectedDay);
-    return eachDayOfInterval({
-      start: weekStart,
-      end: addDays(weekStart, 6),
-    });
-  }, [selectedDay]);
-
-  const dayHours = useMemo(() => {
-    return eachHourOfInterval({
-      start: startOfDay(selectedDay),
-      end: endOfDay(selectedDay),
-    });
-  }, [selectedDay]);
-
   const calendarData = useMemo((): CalendarData[] => {
-    const daysToProcess = viewMode === "month" ? calendarDays : weekDays;
-
-    return daysToProcess.map((day) => ({
+    return calendarDays.map((day) => ({
       day,
       events: tasks
         .filter((task) => isSameDay(task.date, day))
@@ -193,20 +198,24 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
           priority: task.priority,
         })),
     }));
-  }, [tasks, calendarDays, weekDays, viewMode]);
+  }, [tasks, calendarDays]);
 
-  const dayTasks = useMemo(() => {
-    return tasks.filter((task) => isSameDay(task.date, selectedDay));
-  }, [tasks, selectedDay]);
+  const filteredTasksForView = useMemo(() => {
+    if (viewMode === "day") {
+      return tasks.filter((task) => isSameDay(task.date, selectedDay));
+    }
+    if (viewMode === "all") {
+      return tasks;
+    }
+    return [];
+  }, [tasks, selectedDay, viewMode]);
+
+  const sortedTasksForView = useMemo(() => {
+    return sortTasks([...filteredTasksForView], settings.defaultSortBy);
+  }, [filteredTasksForView, settings.defaultSortBy]);
 
   const periodTitles = useMemo(() => {
     const monthTitle = format(firstDayCurrentMonth, "MMMM yyyy");
-    const weekStart = startOfWeek(selectedDay);
-    const weekEnd = addDays(weekStart, 6);
-    const weekTitle = `${format(weekStart, "MMM d")} - ${format(
-      weekEnd,
-      "MMM d, yyyy"
-    )}`;
     const dayTitle = format(selectedDay, "EEEE, MMMM d, yyyy");
 
     const monthSubtitle = `${format(firstDayCurrentMonth, "MMM d")} - ${format(
@@ -216,8 +225,8 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
 
     return {
       month: { title: monthTitle, subtitle: monthSubtitle },
-      week: { title: weekTitle, subtitle: "Week view" },
-      day: { title: dayTitle, subtitle: "Day view" },
+      day: { title: dayTitle, subtitle: "Tasks for selected day" },
+      all: { title: "All Tasks", subtitle: "Complete task management" },
     };
   }, [firstDayCurrentMonth, selectedDay]);
 
@@ -242,9 +251,10 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
     if (viewMode === "month") {
       const firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 });
       setCurrentMonth(format(firstDayNextMonth, "MMM-yyyy"));
-    } else if (viewMode === "week") {
-      setSelectedDay(addWeeks(selectedDay, -1));
-    } else {
+    } else if (viewMode === "day") {
+      setSelectedDay(addDays(selectedDay, -1));
+    } else if (viewMode === "all") {
+      setViewMode("day");
       setSelectedDay(addDays(selectedDay, -1));
     }
   }, [viewMode, firstDayCurrentMonth, selectedDay]);
@@ -253,9 +263,10 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
     if (viewMode === "month") {
       const firstDayNextMonth = add(firstDayCurrentMonth, { months: 1 });
       setCurrentMonth(format(firstDayNextMonth, "MMM-yyyy"));
-    } else if (viewMode === "week") {
-      setSelectedDay(addWeeks(selectedDay, 1));
-    } else {
+    } else if (viewMode === "day") {
+      setSelectedDay(addDays(selectedDay, 1));
+    } else if (viewMode === "all") {
+      setViewMode("day");
       setSelectedDay(addDays(selectedDay, 1));
     }
   }, [viewMode, firstDayCurrentMonth, selectedDay]);
@@ -274,6 +285,61 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
       }
     },
     [tasks]
+  );
+
+  const startEditing = useCallback((id: string, text: string) => {
+    setEditingTaskId(id);
+    setEditText(text);
+  }, []);
+
+  const cancelEditing = useCallback(() => {
+    setEditingTaskId(null);
+    setEditText("");
+  }, []);
+
+  const handleEditTask = useCallback(
+    async (updatedTask: TaskItem) => {
+      if (!updatedTask.text.trim()) {
+        cancelEditing();
+        return;
+      }
+
+      try {
+        const task = tasks.find((t) => t.id === updatedTask.id);
+        if (!task) return;
+
+        const finalTask = serializeTask({
+          ...task,
+          text: updatedTask.text,
+          scheduled_time: updatedTask.scheduled_time,
+          priority: updatedTask.priority,
+        });
+
+        if (
+          settings.syncWithGoogleCalendar &&
+          googleCalendar.isSignedIn &&
+          googleCalendar.hasGoogleConnected() &&
+          task.gcalEventId &&
+          (task.text !== updatedTask.text ||
+            task.scheduled_time !== updatedTask.scheduled_time ||
+            task.priority !== updatedTask.priority)
+        ) {
+          await googleCalendar.updateEvent(finalTask, task.gcalEventId);
+        }
+
+        await updateTask(updatedTask.id, finalTask);
+        cancelEditing();
+      } catch (error) {
+        console.error("Failed to update task:", error);
+      }
+    },
+    [
+      tasks,
+      updateTask,
+      cancelEditing,
+      settings.syncWithGoogleCalendar,
+      googleCalendar,
+    ]
   );
 
   const handleTaskSave = useCallback(
@@ -373,6 +439,10 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editingTaskId) {
+        cancelEditing();
+      }
+
       if (e.altKey) {
         if (e.key === "[" || e.code === "BracketLeft") {
           e.preventDefault();
@@ -387,8 +457,8 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
       if (e.key === "Tab" && e.shiftKey) {
         e.preventDefault();
         if (viewMode === "month") {
-          handleViewModeChange("week");
-        } else if (viewMode === "week") {
+          handleViewModeChange("all");
+        } else if (viewMode === "all") {
           handleViewModeChange("day");
         } else {
           handleViewModeChange("month");
@@ -398,7 +468,20 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewMode, previousPeriod, nextPeriod, handleViewModeChange]);
+  }, [
+    viewMode,
+    previousPeriod,
+    nextPeriod,
+    handleViewModeChange,
+    editingTaskId,
+    cancelEditing,
+  ]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setViewMode(settings.defaultViewMode);
+    }
+  }, [settings.defaultViewMode, isMobile]);
 
   const renderMonthView = useCallback(() => {
     return (
@@ -476,7 +559,6 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
                           key={event.id}
                           event={event}
                           task={task}
-                          index={index}
                           isPastDue={isPastDue}
                           onEdit={() => handleTaskEdit(event.id)}
                           onDelete={() => handleTaskDelete(event.id)}
@@ -521,259 +603,44 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
     handleTaskToggleComplete,
   ]);
 
-  const renderWeekView = useCallback(() => {
+  const renderTasksView = useCallback(() => {
     return (
-      <>
-        <div className="sticky top-0 z-10 grid grid-cols-7 border-b border-neutral-800/40 text-center text-xs font-medium leading-6 bg-neutral-900">
-          {weekDays.map((day) => (
-            <div
-              key={day.getTime()}
-              className={cn(
-                "border-r border-neutral-800/40 py-3 text-neutral-400 last:border-r-0 flex flex-col items-center gap-1",
-                isToday(day) && "text-white"
-              )}
-            >
-              <span className="text-[10px] uppercase tracking-wider">
-                {format(day, "EEE")}
-              </span>
-              <span
-                className={cn(
-                  "text-sm font-medium w-6 h-6 rounded-full flex items-center justify-center",
-                  isToday(day) && "bg-white text-black",
-                  isEqual(day, selectedDay) &&
-                    !isToday(day) &&
-                    "bg-neutral-700 text-white"
-                )}
-              >
-                {format(day, "d")}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-7 gap-0">
-            {weekDays.map((day) => {
-              const dayTasksForWeek = dayTasks.filter((task) =>
-                isSameDay(task.date, day)
-              );
-
-              return (
-                <div
-                  key={day.getTime()}
-                  onClick={() => handleDayClick(day)}
-                  onDoubleClick={() => handleDayDoubleClick(day)}
-                  className={cn(
-                    "border-r border-neutral-800/40 min-h-[400px] p-2 hover:bg-neutral-800/30 cursor-pointer transition-colors last:border-r-0",
-                    isEqual(day, selectedDay) &&
-                      "bg-neutral-800/50 ring-1 ring-neutral-700"
-                  )}
-                >
-                  <div className="space-y-1">
-                    {dayTasksForWeek.map((task) => {
-                      const isPastDue =
-                        settings.pendingEnabled &&
-                        task.date &&
-                        isDateBeforeToday(task.date) &&
-                        !task.completed;
-
-                      return (
-                        <TaskDetailPopover
-                          key={task.id}
-                          task={task}
-                          onEdit={() => handleTaskEdit(task.id)}
-                          onDelete={() => handleTaskDelete(task.id)}
-                          onToggleComplete={() =>
-                            handleTaskToggleComplete(task.id)
-                          }
-                        >
-                          <div
-                            className={cn(
-                              "text-xs p-2 border cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-[1.02] rounded-sm",
-                              getPriorityColor(task.priority),
-                              task.completed && "opacity-60 line-through"
-                            )}
-                          >
-                            <p className="font-medium text-white line-clamp-2 mb-1">
-                              {task.text}
-                            </p>
-                            <div className="flex items-center gap-1.5">
-                              {task.scheduled_time && (
-                                <span className="text-neutral-300 text-[10px]">
-                                  {formatTimeDisplay(task.scheduled_time)}
-                                </span>
-                              )}
-                              {isPastDue && (
-                                <div className="flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3 text-yellow-500" />
-                                  <span className="text-yellow-500 text-[10px] font-medium">
-                                    Pending
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TaskDetailPopover>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </>
-    );
-  }, [
-    weekDays,
-    dayTasks,
-    selectedDay,
-    settings.pendingEnabled,
-    isDateBeforeToday,
-    handleDayClick,
-    handleDayDoubleClick,
-    handleTaskEdit,
-    handleTaskDelete,
-    handleTaskToggleComplete,
-  ]);
-
-  const renderDayView = useCallback(() => {
-    return (
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[60px_1fr] divide-x divide-neutral-800/40">
-          <div className="sticky left-0 bg-neutral-900">
-            {dayHours.map((hour) => (
-              <div
-                key={hour.getTime()}
-                className="h-16 border-b border-neutral-800/40 flex items-start justify-end pr-3 pt-1"
-              >
-                <span className="text-xs text-neutral-400 font-medium">
-                  {format(hour, "h a")}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="relative">
-            {dayHours.map((hour) => (
-              <div
-                key={hour.getTime()}
-                className="h-16 border-b border-neutral-800/40 relative hover:bg-neutral-800/20 transition-colors"
+      <div className="flex-1 flex justify-center bg-neutral-900">
+        <div className="w-full max-w-2xl">
+          <div className="overflow-y-auto h-full">
+            {sortedTasksForView.length === 0 ? (
+              <EmptyState isMobile={false} />
+            ) : (
+              <TaskList
+                tasks={sortedTasksForView}
+                onToggle={handleTaskToggleComplete}
+                onDelete={handleTaskDelete}
+                onEdit={startEditing}
+                editingTaskId={editingTaskId}
+                editText={editText}
+                setEditText={setEditText}
+                handleEditTask={handleEditTask}
+                cancelEditing={cancelEditing}
+                viewMode={viewMode === "day" ? "day" : "all"}
+                pendingIndicator={settings.pendingEnabled}
               />
-            ))}
-
-            {dayTasks
-              .filter((task) => task.scheduled_time)
-              .map((task) => {
-                const [hours, minutes] = task
-                  .scheduled_time!.split(":")
-                  .map(Number);
-                const topPosition = hours * 64 + (minutes * 64) / 60;
-
-                const isPastDue =
-                  settings.pendingEnabled &&
-                  task.date &&
-                  isDateBeforeToday(task.date) &&
-                  !task.completed;
-
-                return (
-                  <TaskDetailPopover
-                    key={task.id}
-                    task={task}
-                    onEdit={() => handleTaskEdit(task.id)}
-                    onDelete={() => handleTaskDelete(task.id)}
-                    onToggleComplete={() => handleTaskToggleComplete(task.id)}
-                  >
-                    <div
-                      className={cn(
-                        "absolute left-1 right-1 text-xs p-2 border cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-[1.02] rounded-sm z-10",
-                        getPriorityColor(task.priority),
-                        task.completed && "opacity-60 line-through"
-                      )}
-                      style={{ top: `${topPosition}px`, minHeight: "32px" }}
-                    >
-                      <p className="font-medium text-white line-clamp-2 mb-1">
-                        {task.text}
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-neutral-300 text-[10px]">
-                          {formatTimeDisplay(task.scheduled_time!)}
-                        </span>
-                        {isPastDue && (
-                          <div className="flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3 text-yellow-500" />
-                            <span className="text-yellow-500 text-[10px] font-medium">
-                              Pending
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </TaskDetailPopover>
-                );
-              })}
-
-            <div className="absolute top-0 left-1 right-1 z-20">
-              <div className="bg-neutral-900/95 border-b border-neutral-800/40 p-2 space-y-1">
-                {dayTasks
-                  .filter((task) => !task.scheduled_time)
-                  .map((task) => {
-                    const isPastDue =
-                      settings.pendingEnabled &&
-                      task.date &&
-                      isDateBeforeToday(task.date) &&
-                      !task.completed;
-
-                    return (
-                      <TaskDetailPopover
-                        key={task.id}
-                        task={task}
-                        onEdit={() => handleTaskEdit(task.id)}
-                        onDelete={() => handleTaskDelete(task.id)}
-                        onToggleComplete={() =>
-                          handleTaskToggleComplete(task.id)
-                        }
-                      >
-                        <div
-                          className={cn(
-                            "text-xs p-2 border cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-[1.02] rounded-sm",
-                            getPriorityColor(task.priority),
-                            task.completed && "opacity-60 line-through"
-                          )}
-                        >
-                          <p className="font-medium text-white line-clamp-1 mb-1">
-                            {task.text}
-                          </p>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-neutral-300 text-[10px]">
-                              All day
-                            </span>
-                            {isPastDue && (
-                              <div className="flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3 text-yellow-500" />
-                                <span className="text-yellow-500 text-[10px] font-medium">
-                                  Pending
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </TaskDetailPopover>
-                    );
-                  })}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
     );
   }, [
-    dayHours,
-    dayTasks,
-    settings.pendingEnabled,
-    isDateBeforeToday,
-    handleTaskEdit,
-    handleTaskDelete,
+    sortedTasksForView,
     handleTaskToggleComplete,
+    handleTaskDelete,
+    startEditing,
+    editingTaskId,
+    editText,
+    setEditText,
+    handleEditTask,
+    cancelEditing,
+    viewMode,
+    settings.pendingEnabled,
   ]);
 
   const currentPeriod = periodTitles[viewMode];
@@ -799,46 +666,29 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
               style={{
                 width: "calc(34.333%)",
                 transform:
-                  viewMode === "month"
+                  viewMode === "all"
                     ? "translateX(0px)"
-                    : viewMode === "week"
-                    ? "translateX(calc(100% + 0px))"
-                    : "translateX(calc(200% + 0px))",
+                    : viewMode === "day"
+                    ? "translateX(calc(95.44%))"
+                    : "translateX(calc(196%))",
               }}
             />
             <button
               type="button"
-              onClick={() => handleViewModeChange("month")}
+              onClick={() => handleViewModeChange("all")}
               className={cn(
                 "px-3 py-2 text-sm cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 justify-center",
                 "flex-1 min-w-0",
-                viewMode === "month"
+                viewMode === "all"
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
               )}
-              aria-label="Switch to month view"
-              aria-pressed={viewMode === "month"}
-              title="Month view (Shift+Tab to cycle)"
+              aria-label="Switch to all tasks view"
+              aria-pressed={viewMode === "all"}
+              title="All tasks view (Shift+Tab to cycle)"
             >
-              <Calendar size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Month</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewModeChange("week")}
-              className={cn(
-                "px-3 py-2 text-sm cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 justify-center",
-                "flex-1 min-w-0",
-                viewMode === "week"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground/80"
-              )}
-              aria-label="Switch to week view"
-              aria-pressed={viewMode === "week"}
-              title="Week view (Shift+Tab to cycle)"
-            >
-              <CalendarRange size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Week</span>
+              <List size={14} className="shrink-0" />
+              <span className="hidden sm:inline">All</span>
             </button>
             <button
               type="button"
@@ -856,6 +706,23 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
             >
               <CalendarDays size={14} className="shrink-0" />
               <span className="hidden sm:inline">Day</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("month")}
+              className={cn(
+                "px-3 py-2 text-sm cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 justify-center",
+                "flex-1 min-w-0",
+                viewMode === "month"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground/80"
+              )}
+              aria-label="Switch to month view"
+              aria-pressed={viewMode === "month"}
+              title="Month view (Shift+Tab to cycle)"
+            >
+              <Calendar size={14} className="shrink-0" />
+              <span className="hidden sm:inline">Month</span>
             </button>
           </div>
 
@@ -909,9 +776,8 @@ function CalendarView({ onDateChange, onNewTaskClick }: CalendarViewProps) {
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
+        {(viewMode === "day" || viewMode === "all") && renderTasksView()}
         {viewMode === "month" && renderMonthView()}
-        {viewMode === "week" && renderWeekView()}
-        {viewMode === "day" && renderDayView()}
       </div>
 
       <TaskEditDialog

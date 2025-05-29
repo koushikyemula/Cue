@@ -6,7 +6,7 @@ export interface UserSettings {
   aiEnabled: boolean;
   autoRemoveCompleted: boolean;
   pendingEnabled: boolean;
-  defaultViewMode: "date" | "all";
+  defaultViewMode: "month" | "day" | "all";
   defaultPriority: "high" | "medium" | "low" | undefined;
   defaultSortBy: SortOption;
   syncWithGoogleCalendar: boolean;
@@ -16,7 +16,7 @@ export const defaultSettings: UserSettings = {
   aiEnabled: true,
   autoRemoveCompleted: false,
   pendingEnabled: true,
-  defaultViewMode: "date",
+  defaultViewMode: "all",
   defaultPriority: undefined,
   defaultSortBy: "newest",
   syncWithGoogleCalendar: true,

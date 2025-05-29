@@ -82,19 +82,19 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
 
   const [viewState, dispatch] = useReducer(
     (
-      state: { mode: "date" | "all"; key: number },
+      state: { mode: "day" | "all"; key: number },
       action: { type: string; payload?: any }
     ) => {
       switch (action.type) {
-        case "SET_DATE_MODE":
-          return { mode: "date" as const, key: state.key + 1 };
+        case "SET_DAY_MODE":
+          return { mode: "day" as const, key: state.key + 1 };
         case "SET_ALL_MODE":
           return { mode: "all" as const, key: state.key + 1 };
         default:
           return state;
       }
     },
-    { mode: settings.defaultViewMode, key: 0 }
+    { mode: settings.defaultViewMode === "all" ? "all" : "day", key: 0 }
   );
 
   const viewMode = viewState.mode;
@@ -107,7 +107,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
     if (settings.defaultViewMode === "all") {
       dispatch({ type: "SET_ALL_MODE" });
     } else {
-      dispatch({ type: "SET_DATE_MODE" });
+      dispatch({ type: "SET_DAY_MODE" });
     }
   }, [settings.defaultViewMode]);
 
@@ -123,7 +123,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
 
   const filteredTasks = useMemo(() => {
     if (!isClientLoaded) return [];
-    if (viewMode === "date") {
+    if (viewMode === "day") {
       return [...dateFilteredTasks];
     } else {
       return [...allTasks];
@@ -139,7 +139,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
     if (!isClientLoaded) return { completed: 0, remaining: 0, progress: 0 };
 
     const tasksToCount =
-      viewMode === "date" ? [...dateFilteredTasks] : [...allTasks];
+      viewMode === "day" ? [...dateFilteredTasks] : [...allTasks];
     const completed = tasksToCount.filter((task) => task.completed).length;
     const remaining = tasksToCount.filter((task) => !task.completed).length;
     const progress =
@@ -268,11 +268,11 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
   );
 
   const handleViewModeChange = useCallback(
-    (mode: "date" | "all") => {
+    (mode: "day" | "all") => {
       if (mode === viewMode) return;
 
-      if (mode === "date") {
-        dispatch({ type: "SET_DATE_MODE" });
+      if (mode === "day") {
+        dispatch({ type: "SET_DAY_MODE" });
       } else {
         dispatch({ type: "SET_ALL_MODE" });
       }
@@ -288,10 +288,10 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
 
       if (e.key === "Tab" && e.shiftKey) {
         e.preventDefault();
-        if (viewMode === "date") {
+        if (viewMode === "day") {
           handleViewModeChange("all");
         } else {
-          handleViewModeChange("date");
+          handleViewModeChange("day");
         }
       }
 
@@ -299,7 +299,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
         if (e.key === "[" || e.code === "BracketLeft") {
           e.preventDefault();
           if (viewMode === "all") {
-            handleViewModeChange("date");
+            handleViewModeChange("day");
           }
           setSelectedDate((prev) => {
             const newDate = addDays(prev, -1);
@@ -311,7 +311,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
         if (e.key === "]" || e.code === "BracketRight") {
           e.preventDefault();
           if (viewMode === "all") {
-            handleViewModeChange("date");
+            handleViewModeChange("day");
           }
           setSelectedDate((prev) => {
             const newDate = addDays(prev, 1);
@@ -343,13 +343,13 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
   // Handle swipe gestures for mobile
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
-      if (viewMode === "date" && isMobile) {
+      if (viewMode === "day" && isMobile) {
         handleViewModeChange("all");
       }
     },
     onSwipedRight: () => {
       if (viewMode === "all" && isMobile) {
-        handleViewModeChange("date");
+        handleViewModeChange("day");
       }
     },
     trackMouse: false,
@@ -368,24 +368,24 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
               className="absolute h-full bg-neutral-800 z-0 w-1/2 transition-transform duration-300 ease-out"
               style={{
                 transform:
-                  viewMode === "date" ? "translateX(0)" : "translateX(100%)",
+                  viewMode === "day" ? "translateX(0)" : "translateX(100%)",
               }}
             />
             <button
               type="button"
               onClick={() => {
-                if (viewMode !== "date") {
-                  handleViewModeChange("date");
+                if (viewMode !== "day") {
+                  handleViewModeChange("day");
                 }
               }}
               className={`px-3 py-2 text-xs cursor-pointer font-medium flex items-center gap-1.5 transition-colors relative z-10 w-1/2 justify-center ${
-                viewMode === "date"
+                viewMode === "day"
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground/80"
               }`}
-              aria-label="Switch to date view"
-              aria-pressed={viewMode === "date"}
-              title="View tasks by date"
+              aria-label="Switch to day view"
+              aria-pressed={viewMode === "day"}
+              title="View tasks by day"
             >
               <CalendarIcon size={14} />
             </button>
@@ -408,7 +408,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
               <ViewIcon size={14} />
             </button>
           </div>
-          {viewMode === "date" && (
+          {viewMode === "day" && (
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -504,11 +504,9 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
             <div
               className="absolute inset-0 transition-all duration-300 ease-in-out"
               style={{
-                transform: `translateX(${
-                  viewMode === "date" ? "0%" : "-100%"
-                })`,
-                opacity: viewMode === "date" ? 1 : 0,
-                visibility: viewMode === "date" ? "visible" : "hidden",
+                transform: `translateX(${viewMode === "day" ? "0%" : "-100%"})`,
+                opacity: viewMode === "day" ? 1 : 0,
+                visibility: viewMode === "day" ? "visible" : "hidden",
               }}
             >
               <div className="h-full overflow-y-auto">
@@ -525,7 +523,7 @@ export default function Task({ isMobile = false, onDateChange }: TaskProps) {
                   setEditText={setEditText}
                   handleEditTask={handleEditTask}
                   cancelEditing={cancelEditing}
-                  viewMode="date"
+                  viewMode="day"
                   pendingIndicator={settings.pendingEnabled}
                 />
               </div>
