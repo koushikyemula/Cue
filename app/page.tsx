@@ -13,10 +13,10 @@ import { useCallback, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 function HomePage() {
-  const [isInputVisible, setIsInputVisible] = useState(false);
-  const [currentSelectedDate, setCurrentSelectedDate] = useState(new Date());
-  const inputRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const inputRef = useRef<HTMLDivElement>(null);
+  const [currentSelectedDate, setCurrentSelectedDate] = useState(new Date());
+  const [isInputVisible, setIsInputVisible] = useState(isMobile ? true : false);
 
   const { settings } = useSettingsStore();
   const { processAIActions } = useTaskStoreWithPersistence();
