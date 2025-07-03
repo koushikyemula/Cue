@@ -38,7 +38,7 @@ function HomePage() {
           text,
           currentSelectedDate,
           settings,
-          googleCalendar
+          googleCalendar,
         );
         onComplete?.();
       } catch (error) {
@@ -46,7 +46,7 @@ function HomePage() {
         onComplete?.();
       }
     },
-    [processAIActions, currentSelectedDate, settings, googleCalendar]
+    [processAIActions, currentSelectedDate, settings, googleCalendar],
   );
 
   if (!isMobile) {
@@ -96,9 +96,8 @@ function HomePage() {
       </div>
 
       <div
-        className={`flex-1 w-full max-w-md mx-auto px-4 pt-3 ${
-          isInputVisible ? "pb-[130px]" : "pb-6"
-        } bg-neutral-900 overflow-hidden`}
+        className={`flex-1 w-full max-w-md mx-auto px-4 pt-3 ${isInputVisible ? "pb-[130px]" : "pb-6"
+          } bg-neutral-900 overflow-hidden`}
       >
         <Task isMobile={isMobile} onDateChange={setCurrentSelectedDate} />
       </div>

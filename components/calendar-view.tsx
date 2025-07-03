@@ -30,7 +30,12 @@ import {
   startOfToday,
   startOfWeek,
 } from "date-fns";
-import { AlertCircle, Calendar, CalendarDays, List } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarFold,
+  CalendarRange,
+  ListChecks,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 interface CalendarEvent {
@@ -97,7 +102,7 @@ const TaskEvent = memo<{
       className={cn(
         "text-xs p-2 border truncate cursor-pointer hover:opacity-90 transition-all duration-200 hover:scale-[1.01] rounded-md shadow-sm backdrop-blur-sm",
         getPriorityColor(event.priority),
-        task.completed && "opacity-60 line-through"
+        task.completed && "opacity-60 line-through",
       )}
     >
       <p className="font-medium text-white truncate leading-tight text-[11px]">
@@ -158,7 +163,7 @@ function CalendarView({
   const [viewMode, setViewMode] = useState<ViewMode>(settings.defaultViewMode);
   const [selectedDay, setSelectedDay] = useState(startOfToday());
   const [currentMonth, setCurrentMonth] = useState(
-    format(startOfToday(), "MMM-yyyy")
+    format(startOfToday(), "MMM-yyyy"),
   );
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -173,7 +178,7 @@ function CalendarView({
   const today = useMemo(() => startOfToday(), []);
   const firstDayCurrentMonth = useMemo(
     () => parse(currentMonth, "MMM-yyyy", new Date()),
-    [currentMonth]
+    [currentMonth],
   );
 
   const calendarDays = useMemo(() => {
@@ -220,7 +225,7 @@ function CalendarView({
 
     const monthSubtitle = `${format(firstDayCurrentMonth, "MMM d")} - ${format(
       endOfMonth(firstDayCurrentMonth),
-      "MMM d, yyyy"
+      "MMM d, yyyy",
     )}`;
 
     return {
@@ -284,7 +289,7 @@ function CalendarView({
         setEditDialogOpen(true);
       }
     },
-    [tasks]
+    [tasks],
   );
 
   const startEditing = useCallback((id: string, text: string) => {
@@ -339,7 +344,7 @@ function CalendarView({
       cancelEditing,
       settings.syncWithGoogleCalendar,
       googleCalendar,
-    ]
+    ],
   );
 
   const handleTaskSave = useCallback(
@@ -364,7 +369,7 @@ function CalendarView({
         updated_at: new Date(),
       });
     },
-    [updateTask, tasks, settings.syncWithGoogleCalendar, googleCalendar]
+    [updateTask, tasks, settings.syncWithGoogleCalendar, googleCalendar],
   );
 
   const handleTaskDelete = useCallback(
@@ -382,7 +387,7 @@ function CalendarView({
 
       await deleteTask(taskId);
     },
-    [tasks, settings.syncWithGoogleCalendar, googleCalendar, deleteTask]
+    [tasks, settings.syncWithGoogleCalendar, googleCalendar, deleteTask],
   );
 
   const handleTaskToggleComplete = useCallback(
@@ -418,7 +423,7 @@ function CalendarView({
       googleCalendar,
       toggleTask,
       handleTaskDelete,
-    ]
+    ],
   );
 
   const handleDayClick = useCallback((day: Date) => {
@@ -430,7 +435,7 @@ function CalendarView({
       setSelectedDay(day);
       onNewTaskClick?.(day);
     },
-    [onNewTaskClick]
+    [onNewTaskClick],
   );
 
   useEffect(() => {
@@ -514,7 +519,7 @@ function CalendarView({
                     "relative flex flex-col border-b border-r border-neutral-800/40 hover:bg-neutral-800/30 cursor-pointer transition-all duration-200 ease-in-out overflow-hidden group last:border-r-0",
                     "h-[190px] max-h-[190px]",
                     isEqual(day, selectedDay) &&
-                      "bg-neutral-800/50 ring-2 ring-neutral-700/50 ring-inset"
+                      "bg-neutral-800/50 ring-2 ring-neutral-700/50 ring-inset",
                   )}
                 >
                   <header className="flex items-center justify-between p-3 pb-2.5 flex-shrink-0">
@@ -535,7 +540,7 @@ function CalendarView({
                           !isToday(day) &&
                           "hover:bg-neutral-800 hover:text-white",
                         !isSameMonth(day, firstDayCurrentMonth) &&
-                          "text-neutral-600"
+                          "text-neutral-600",
                       )}
                     >
                       <time dateTime={format(day, "yyyy-MM-dd")}>
@@ -669,8 +674,8 @@ function CalendarView({
                   viewMode === "all"
                     ? "translateX(0px)"
                     : viewMode === "day"
-                    ? "translateX(calc(95.44%))"
-                    : "translateX(calc(196%))",
+                      ? "translateX(calc(95.44%))"
+                      : "translateX(calc(196%))",
               }}
             />
             <button
@@ -681,13 +686,13 @@ function CalendarView({
                 "flex-1 min-w-0",
                 viewMode === "all"
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground/80"
+                  : "text-muted-foreground hover:text-foreground/80",
               )}
               aria-label="Switch to all tasks view"
               aria-pressed={viewMode === "all"}
               title="All tasks view (Shift+Tab to cycle)"
             >
-              <List size={14} className="shrink-0" />
+              <ListChecks size={14} className="shrink-0" />
               <span className="hidden sm:inline">All</span>
             </button>
             <button
@@ -698,13 +703,13 @@ function CalendarView({
                 "flex-1 min-w-0",
                 viewMode === "day"
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground/80"
+                  : "text-muted-foreground hover:text-foreground/80",
               )}
               aria-label="Switch to day view"
               aria-pressed={viewMode === "day"}
               title="Day view (Shift+Tab to cycle)"
             >
-              <CalendarDays size={14} className="shrink-0" />
+              <CalendarFold size={14} className="shrink-0" />
               <span className="hidden sm:inline">Day</span>
             </button>
             <button
@@ -715,13 +720,13 @@ function CalendarView({
                 "flex-1 min-w-0",
                 viewMode === "month"
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground/80"
+                  : "text-muted-foreground hover:text-foreground/80",
               )}
               aria-label="Switch to month view"
               aria-pressed={viewMode === "month"}
               title="Month view (Shift+Tab to cycle)"
             >
-              <Calendar size={14} className="shrink-0" />
+              <CalendarRange size={14} className="shrink-0" />
               <span className="hidden sm:inline">Month</span>
             </button>
           </div>
